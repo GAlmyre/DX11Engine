@@ -17,20 +17,20 @@ Camera::Camera(XMVECTOR Position, XMVECTOR Target, XMVECTOR UpVector)
 
 void Camera::UpdateViewMatrix()
 {
-	ViewMatrix = XMMatrixLookAtLH(Position, Target, UpVector);
+	ViewMatrix = XMMatrixLookToLH(Position, ForwardVector, UpVector);
 }
 
-void Camera::UpdateProjectionMatrix(float Width, float Height)
+void Camera::UpdateProjectionMatrix(int Width, int Height)
 {
-	ProjectionMatrix = XMMatrixPerspectiveFovLH(0.4f * 3.14f, Width / Height, 1.0f, 1000.0f);
+	ProjectionMatrix = XMMatrixPerspectiveFovLH(0.4f * 3.14f, Width / Height, 0.1f, 10000.0f);
 }
 
 DirectX::XMVECTOR Camera::GetForwardVector()
 {
-	return XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
+	return ForwardVector;
 }
 
 DirectX::XMVECTOR Camera::GetRightVector()
 {
-	return XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f);
+	return -XMVector3Cross(GetForwardVector(), GetUpVector());
 }

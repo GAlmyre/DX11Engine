@@ -11,6 +11,7 @@ struct VS_OUTPUT
     float4 WorldPos : POSITION;
     float3 Normal : NORMAL;
 	float2 TexCoord : TEXCOORD;
+    float2 ReturnTex : RETTEX;
 };
 
 VS_OUTPUT main( float4 pos : POSITION, float3 Normal : NORMAL, float2 TexCoord : TEXCOORD )
@@ -23,6 +24,7 @@ VS_OUTPUT main( float4 pos : POSITION, float3 Normal : NORMAL, float2 TexCoord :
     Output.Normal = mul(Normal, WorldMatrix);
     
     Output.TexCoord = TexCoord;
+    Output.ReturnTex = TexCoord;
 	
 	return Output;
 }

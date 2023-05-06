@@ -4,6 +4,9 @@
 
 #include "pch.h"
 #include "Game.h"
+#include <commctrl.h>
+#include "mshtmcid.h"
+#include <shobjidl_core.h>
 
 using namespace DirectX;
 
@@ -14,10 +17,14 @@ using namespace DirectX;
 
 #pragma warning(disable : 4061)
 
+#define IDM_FILE_OPEN 0
+
 namespace
 {
     std::unique_ptr<Game> g_game;
+    HWND Button;
 };
+
 
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
@@ -56,6 +63,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
         wcex.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_WINDOW + 1);
         wcex.lpszClassName = L"DirectX11EngineWindowClass";
         wcex.hIconSm = LoadIconW(wcex.hInstance, L"IDI_ICON");
+
         if (!RegisterClassExW(&wcex))
             return 1;
 
@@ -65,11 +73,16 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 
         RECT rc = { 0, 0, static_cast<LONG>(w), static_cast<LONG>(h) };
 
-        AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
+        AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, TRUE);
+
+        HMENU Menu = CreateMenu();
+
+        AppendMenuW(Menu, MF_STRING, IDM_FILE_OPEN, L"&Open");
 
         HWND hwnd = CreateWindowExW(0, L"DirectX11EngineWindowClass", L"DirectX11Engine", WS_OVERLAPPEDWINDOW,
-            CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top, nullptr, nullptr, hInstance,
+            CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top, nullptr, Menu, hInstance,
             nullptr);
+
         // TODO: Change to CreateWindowExW(WS_EX_TOPMOST, L"DirectX11EngineWindowClass", L"DirectX11Engine", WS_POPUP,
         // to default to fullscreen.
 
@@ -108,6 +121,51 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
     return static_cast<int>(msg.wParam);
 }
 
+void OpenModel()
+{
+    HRESULT hr;
+    IFileOpenDialog* pFileOpen;
+
+    COMDLG_FILTERSPEC Filters[1] = { L"ObjExt", L"*.obj" };
+
+    // Create the FileOpenDialog object.
+    hr = CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_ALL,
+        IID_IFileOpenDialog, reinterpret_cast<void**>(&pFileOpen));
+    //pFileOpen->SetFileTypes(1, Filters);
+
+    if (SUCCEEDED(hr))
+    {
+        // Show the Open dialog box.
+        hr = pFileOpen->Show(NULL);
+        // Get the file name from the dialog box.
+        if (SUCCEEDED(hr))
+        {
+            IShellItem* pItem;
+            hr = pFileOpen->GetResult(&pItem);
+            if (SUCCEEDED(hr))
+            {
+                PWSTR Path;
+                hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &Path);
+
+                // Display the file name to the user.
+                if (SUCCEEDED(hr))
+                {
+                    LPWSTR CurrentDirStr = new TCHAR[1024];
+                    GetCurrentDirectory(1024, CurrentDirStr);
+                    std::wstring PathStr = Path;
+                    PathStr.erase(0, wcslen(CurrentDirStr) + 1);
+                    Path = &PathStr[0];
+
+                    g_game->LoadNewModel(PathStr);
+
+                    //MessageBox(NULL, Path, L"File Path", MB_OK);
+                }
+                pItem->Release();
+            }
+        }
+    }
+}
+
 // Windows procedure
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -118,9 +176,20 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     // TODO: Set s_fullscreen to true if defaulting to fullscreen.
 
     auto game = reinterpret_cast<Game*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
-
+ 
     switch (message)
     {
+    case WM_COMMAND :
+		// Parse the menu selections:
+		switch (wParam)
+		{
+		case IDM_FILE_OPEN:
+
+            OpenModel();
+            break;
+		}
+        break;
+
     case WM_PAINT:
         if (s_in_sizemove && game)
         {
@@ -235,8 +304,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 SetWindowLongPtr(hWnd, GWL_STYLE, WS_OVERLAPPEDWINDOW);
                 SetWindowLongPtr(hWnd, GWL_EXSTYLE, 0);
 
-                int width = 800;
-                int height = 600;
+                int width = 1920;
+                int height = 1080;
                 if (game)
                     game->GetDefaultSize(width, height);
 

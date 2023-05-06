@@ -20,6 +20,9 @@
     <Filter Include="Input">
       <UniqueIdentifier>{8094b08f-f5e1-4ba2-9eaa-0c7b86d8c9bd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ModelImporter">
+      <UniqueIdentifier>{0bd24947-f644-4b7b-8191-f82bc38062f0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -34,10 +37,16 @@
     <ClInclude Include="Camera.h">
       <Filter>Camera</Filter>
     </ClInclude>
-    <ClInclude Include="Light.h" />
     <ClInclude Include="GameInputManager.h">
       <Filter>Input</Filter>
     </ClInclude>
+    <ClInclude Include="Light.h">
+      <Filter>Lights</Filter>
+    </ClInclude>
+    <ClInclude Include="OBJ_Loader.h">
+      <Filter>ModelImporter</Filter>
+    </ClInclude>
+    <ClInclude Include="Material.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -52,10 +61,13 @@
     <ClCompile Include="Camera.cpp">
       <Filter>Camera</Filter>
     </ClCompile>
-    <ClCompile Include="Light.cpp" />
     <ClCompile Include="GameInputManager.cpp">
       <Filter>Input</Filter>
     </ClCompile>
+    <ClCompile Include="Light.cpp">
+      <Filter>Lights</Filter>
+    </ClCompile>
+    <ClCompile Include="Material.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />

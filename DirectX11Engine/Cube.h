@@ -8,7 +8,7 @@ class Cube :
 public:
 	Cube();
 
-	Cube(XMFLOAT3 Position, XMFLOAT3 Rotation, XMFLOAT3 Scale);
+	Cube(DirectX::XMFLOAT3 Position, DirectX::XMFLOAT3 Rotation, DirectX::XMFLOAT3 Scale);
 
 	void SetVerticesAndIndices();
 

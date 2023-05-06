@@ -9,6 +9,10 @@
 #include "GameInputManager.h"
 #include "Game.h"
 
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+#include "assimp/material.h"
 
 extern void ExitGame() noexcept;
 
@@ -42,11 +46,12 @@ void Game::Initialize(HWND window, int width, int height)
     m_timer.SetFixedTimeStep(true);
     m_timer.SetTargetElapsedSeconds(1.0 / 60);
     */
-    if (!InputManager)
-    {
-        InputManager = new GameInputManager();
-    }
-    InputManager->Initialize(Window, this);
+
+	if (!InputManager)
+	{
+		InputManager = new GameInputManager();
+	}
+	InputManager->Initialize(Window, this);
 }
 
 // Executes the basic game loop.
@@ -65,8 +70,6 @@ void Game::Update(DX::StepTimer const& timer)
 {
     float elapsedTime = float(timer.GetElapsedSeconds());
 
-    // TODO: Add your game logic here.
-
     FrameTime = elapsedTime;
 
     InputManager->Update();
@@ -84,30 +87,43 @@ void Game::Render()
     Clear();
 
     // Draw each mesh of the scene
-    for (auto Mesh : Meshes)
+    for (Mesh* Mesh : Meshes)
 	{
 		WorldViewProj = Mesh->GetWorldMatrix() * SceneCamera->GetViewMatrix() * SceneCamera->GetProjectionMatrix();
 
-		PerObjectConstantBuffer.WorldViewProj = XMMatrixTranspose(WorldViewProj);
-        PerObjectConstantBuffer.World = XMMatrixTranspose(Mesh->GetWorldMatrix());
+		PerObjectBuffStruct_VS.WorldViewProj = XMMatrixTranspose(WorldViewProj);
+        PerObjectBuffStruct_VS.World = XMMatrixTranspose(Mesh->GetWorldMatrix());
 
-		PerFrameConstantBuffer.SceneLight = *SceneLight;
-		
-		D3dContext->UpdateSubresource(PerFrameBuffer.Get(), 0, NULL, &PerFrameConstantBuffer, 0, 0);
-		D3dContext->PSSetConstantBuffers(0, 1, PerFrameBuffer.GetAddressOf());
+		PerFrameBuffStruct_PS.Sun = Sun->GetLightData();
+        for (int i = 0; i < MAX_LIGHTS && i < Lights.size(); ++i)
+        {
+            PerFrameBuffStruct_PS.PointLights[i] = Lights[i]->GetLightData();
+        }
+        PerObjectBuffStruct_PS.Mat = Mesh->Material;
 
-		D3dContext->UpdateSubresource(PerObjectBuffer.Get(), 0, NULL, &PerObjectConstantBuffer, 0, 0);
-		D3dContext->VSSetConstantBuffers(0, 1, PerObjectBuffer.GetAddressOf());
+		XMFLOAT3 CamPos;
+		XMStoreFloat3(&CamPos, SceneCamera->GetPosition());
+		PerFrameBuffStruct_PS.CameraPosition = CamPos;
+        PerFrameBuffStruct_PS.LightsCount = Lights.size();
+
+		D3dContext->UpdateSubresource(PerFrameBuffer_PS.Get(), 0, NULL, &PerFrameBuffStruct_PS, 0, 0);
+		D3dContext->PSSetConstantBuffers(0, 1, PerFrameBuffer_PS.GetAddressOf());
+
+		D3dContext->UpdateSubresource(PerObjectBuffer_PS.Get(), 0, NULL, &PerObjectBuffStruct_PS, 0, 0);
+		D3dContext->PSSetConstantBuffers(1, 1, PerObjectBuffer_PS.GetAddressOf());
+
+		D3dContext->UpdateSubresource(PerObjectBuffer_VS.Get(), 0, NULL, &PerObjectBuffStruct_VS, 0, 0);
+		D3dContext->VSSetConstantBuffers(0, 1, PerObjectBuffer_VS.GetAddressOf());
 		
 		Mesh->Draw(D3dContext);
     }
 
 	// Text
-	Batch->Begin(SpriteSortMode_Texture);
+	/*Batch->Begin(SpriteSortMode_Texture);
 	wchar_t TextToRender[50] = L"";
-    swprintf(TextToRender, L"FPS : %.0f", 1/FrameTime);
-	Font->DrawString(Batch.get(), TextToRender, FontPos, Colors::White, 0.f, Vector2(OutputWidth, OutputHeight), .5);
-    Batch->End();
+	swprintf(TextToRender, L"FPS : %.0f", 1/FrameTime);
+	Font->DrawString(Batch.get(), TextToRender, FontPos, Colors::White, 0.f, XMFLOAT2(OutputWidth, OutputHeight), .5);
+	Batch->End();*/
 
     Present();
 }
@@ -116,7 +132,7 @@ void Game::Render()
 void Game::Clear()
 {
     // Clear the views.
-    D3dContext->ClearRenderTargetView(RenderTargetView.Get(), Colors::Black);
+    D3dContext->ClearRenderTargetView(RenderTargetView.Get(), Colors::Aqua);
     D3dContext->ClearDepthStencilView(DepthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
     D3dContext->OMSetRenderTargets(1, RenderTargetView.GetAddressOf(), DepthStencilView.Get());
@@ -185,8 +201,40 @@ void Game::OnWindowSizeChanged(int width, int height)
 void Game::GetDefaultSize(int& width, int& height) const noexcept
 {
     // TODO: Change to desired default window size (note minimum size is 320x200).
-    width = 800;
-    height = 600;
+    width = 1920;
+    height = 1080;
+}
+
+void Game::LoadNewModel(std::wstring Path)
+{
+    // load a mesh  
+    wchar_t Dir[_MAX_DIR];
+    wchar_t Dump[_MAX_PATH];
+
+    _wsplitpath_s(Path.c_str(), Dump, Dir, Dump, Dump);
+    Meshes.clear();
+
+	Assimp::Importer Importer;
+
+	const aiScene* Scene = Importer.ReadFile(DX::WStringToString(Path), aiProcess_CalcTangentSpace |
+		aiProcess_Triangulate |
+        aiProcess_MakeLeftHanded |
+        aiProcess_FlipUVs |
+		aiProcess_JoinIdenticalVertices |
+		aiProcess_SortByPType);
+
+    if (Scene)
+    {
+        for (unsigned int i = 0; i < Scene->mNumMeshes; ++i)
+        {
+            aiMesh* CurrentMesh = Scene->mMeshes[i];
+
+            Mesh* NewMesh = new Mesh(CurrentMesh, Scene, std::wstring(Dir));
+
+            NewMesh->InitMesh(D3dDevice, D3dContext);
+            Meshes.push_back(NewMesh);
+        }
+    }
 }
 
 // These are the resources that depend on the device.
@@ -256,33 +304,31 @@ void Game::CreateDevice()
     DX::ThrowIfFailed(context.As(&D3dContext));
 
     // TODO: Initialize device dependent objects here (independent of window size).
-    Font = std::make_unique<SpriteFont>(D3dDevice.Get(), L"Assets/Fonts/Font.spriteFont");
+    //Font = std::make_unique<SpriteFont>(D3dDevice.Get(), L"Assets/Fonts/Font.spriteFont");
     Batch = std::make_unique<SpriteBatch>(D3dContext.Get());
 
     // Initialize the camera
     SceneCamera = new Camera();
-    SceneCamera->SetPosition(XMVectorSet(0.0f, 3.0f, -7.0f, 0.0f));
-    
-    // Create the meshes
-    Cube* NewCube = new Cube();
-    NewCube->SetPosition(XMFLOAT3(0, 0, 0));
-    NewCube->InitMesh(D3dDevice, D3dContext);
+    SceneCamera->SetPosition(XMVectorSet(0.0f, 0.0f, -7.0f, 0.0f));
 
-    Cube* NewCube2 = new Cube();
-    NewCube2->SetPosition(XMFLOAT3(0, 0, 3));
-    NewCube2->InitMesh(D3dDevice, D3dContext);
-
-    Meshes.push_back(NewCube);
-    Meshes.push_back(NewCube2);
+    // load a mesh
+    LoadNewModel(L"Assets/Models/Test/mitsuba.obj");
 
     // Create the lights
-    SceneLight = new Light();
-    SceneLight->Position = XMFLOAT3(0, 5, 0);
-    SceneLight->Range = 100;
-    SceneLight->Attenuation = XMFLOAT3(0.0, 0.2, 0.0);
-    SceneLight->Direction = XMFLOAT3(0.25f, 0.5f, -1.0f);
-    SceneLight->AmbientColor = XMFLOAT4(0.1f, 0.1f, 0.1f, 1.0f);
-    SceneLight->DiffuseColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+    Sun = new DirectionalLight();
+    Sun->Position = XMFLOAT3(-2, 5, -2);
+    Sun->Direction = XMFLOAT3(0.25f, 0.5f, -1.0f);
+    Sun->AmbientColor = XMFLOAT4(.25f, .25f, .25f, 1.0f);
+    Sun->DiffuseColor = XMFLOAT4(1.f, 1.f, 1.f, 1.0f);
+
+	PointLight* Light = new PointLight();
+	Light->Position = XMFLOAT3(3, 3, 0);
+	Light->Range = 100;
+	Light->Attenuation = XMFLOAT3(0.0, 0.2, 0.0);
+	Light->AmbientColor = XMFLOAT4(0.05f, 0.05f, 0.05f, 1.0f);
+	Light->DiffuseColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+
+    //Lights.push_back(Light);
 
 }
 
@@ -344,7 +390,7 @@ void Game::CreateResources()
         swapChainDesc.SampleDesc.Quality = 0;
         swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
         swapChainDesc.BufferCount = backBufferCount;
-        swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+        swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 
         DXGI_SWAP_CHAIN_FULLSCREEN_DESC fsSwapChainDesc = {};
         fsSwapChainDesc.Windowed = TRUE;
@@ -372,12 +418,15 @@ void Game::CreateResources()
 
     // Allocate a 2-D surface as the depth/stencil buffer and
     // create a DepthStencil view on this surface to use on bind.
-    CD3D11_TEXTURE2D_DESC depthStencilDesc(depthBufferFormat, backBufferWidth, backBufferHeight, 1, 1, D3D11_BIND_DEPTH_STENCIL);
+    CD3D11_TEXTURE2D_DESC depthStencilDesc(depthBufferFormat, backBufferWidth, backBufferHeight, 2, 0, D3D11_BIND_DEPTH_STENCIL);
+    depthStencilDesc.SampleDesc.Count = 1;
+    depthStencilDesc.SampleDesc.Quality = 0;
+    depthStencilDesc.MipLevels = 1;
 
     ComPtr<ID3D11Texture2D> depthStencil;
     DX::ThrowIfFailed(D3dDevice->CreateTexture2D(&depthStencilDesc, nullptr, depthStencil.GetAddressOf()));
 
-    CD3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc(D3D11_DSV_DIMENSION_TEXTURE2D);
+    CD3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc(D3D11_DSV_DIMENSION_TEXTURE2DMS);
     DX::ThrowIfFailed(D3dDevice->CreateDepthStencilView(depthStencil.Get(), &depthStencilViewDesc, DepthStencilView.ReleaseAndGetAddressOf()));
 
     // TODO: Initialize windows-size dependent objects here.
@@ -387,19 +436,27 @@ void Game::CreateResources()
     D3D11_BUFFER_DESC ConstantBufferDescriptor;
     ZeroMemory(&ConstantBufferDescriptor, sizeof(D3D11_BUFFER_DESC));
     ConstantBufferDescriptor.Usage = D3D11_USAGE_DEFAULT;
-    ConstantBufferDescriptor.ByteWidth = sizeof(PerObjectConstantBuffer);
+    ConstantBufferDescriptor.ByteWidth = sizeof(PerObjectBuffStruct_VS);
     ConstantBufferDescriptor.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     ConstantBufferDescriptor.CPUAccessFlags = 0;
     ConstantBufferDescriptor.MiscFlags = 0;
-    DX::ThrowIfFailed(D3dDevice->CreateBuffer(&ConstantBufferDescriptor, NULL, PerObjectBuffer.GetAddressOf()));
+    DX::ThrowIfFailed(D3dDevice->CreateBuffer(&ConstantBufferDescriptor, NULL, PerObjectBuffer_VS.GetAddressOf()));
 
 	ZeroMemory(&ConstantBufferDescriptor, sizeof(D3D11_BUFFER_DESC));
 	ConstantBufferDescriptor.Usage = D3D11_USAGE_DEFAULT;
-	ConstantBufferDescriptor.ByteWidth = sizeof(PerFrameConstantBuffer);
+	ConstantBufferDescriptor.ByteWidth = sizeof(PerFrameBuffStruct_PS);
 	ConstantBufferDescriptor.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	ConstantBufferDescriptor.CPUAccessFlags = 0;
 	ConstantBufferDescriptor.MiscFlags = 0;
-    DX::ThrowIfFailed(D3dDevice->CreateBuffer(&ConstantBufferDescriptor, NULL, PerFrameBuffer.GetAddressOf()));
+    DX::ThrowIfFailed(D3dDevice->CreateBuffer(&ConstantBufferDescriptor, NULL, PerFrameBuffer_PS.GetAddressOf()));
+
+	ZeroMemory(&ConstantBufferDescriptor, sizeof(D3D11_BUFFER_DESC));
+	ConstantBufferDescriptor.Usage = D3D11_USAGE_DEFAULT;
+	ConstantBufferDescriptor.ByteWidth = sizeof(PerObjectBuffStruct_PS);
+	ConstantBufferDescriptor.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	ConstantBufferDescriptor.CPUAccessFlags = 0;
+	ConstantBufferDescriptor.MiscFlags = 0;
+	DX::ThrowIfFailed(D3dDevice->CreateBuffer(&ConstantBufferDescriptor, NULL, PerObjectBuffer_PS.GetAddressOf()));
 
     FontPos.x = backBufferWidth / 2.0f;
     FontPos.y = backBufferHeight / 2.0f;
@@ -410,6 +467,7 @@ void Game::CreateResources()
     ZeroMemory(&RasterizerDesc, sizeof(D3D11_RASTERIZER_DESC));
     RasterizerDesc.FillMode = D3D11_FILL_SOLID;
     RasterizerDesc.CullMode = D3D11_CULL_NONE;
+    RasterizerDesc.MultisampleEnable = true;
     DX::ThrowIfFailed(D3dDevice->CreateRasterizerState(&RasterizerDesc, &SolidState));
 
 	ZeroMemory(&RasterizerDesc, sizeof(D3D11_RASTERIZER_DESC));
@@ -451,11 +509,11 @@ void Game::OnDeviceLost()
     {
         delete Mesh;
     }
-    delete SceneLight;
+    delete Sun;
     DepthStencilView.Reset();
     RenderTargetView.Reset();
-    PerObjectBuffer->Release();
-    PerFrameBuffer->Release();
+    PerObjectBuffer_VS->Release();
+    PerFrameBuffer_PS->Release();
     SolidState->Release();
     DepthStencilState->Release();
     WireFrameState->Release();

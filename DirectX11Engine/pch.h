@@ -39,7 +39,13 @@
 #include <algorithm>
 #include <exception>
 #include <memory>
-#include <stdexcept>
+#include <locale>
+#include <codecvt>
+
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+#include "assimp/material.h"
 
 // DXToolKit
 #include "CommonStates.h"
@@ -60,6 +66,9 @@
 #include "SpriteFont.h"
 #include "VertexTypes.h"
 #include "WICTextureLoader.h"
+#include <xlocbuf>
+
+#define MAX_LIGHTS 5
 
 namespace DX
 {
@@ -71,4 +80,20 @@ namespace DX
             throw std::exception();
         }
     }
+
+	inline std::wstring StringToWString(const std::string& str)
+	{
+		using convert_typeX = std::codecvt_utf8<wchar_t>;
+		std::wstring_convert<convert_typeX, wchar_t> converterX;
+
+		return converterX.from_bytes(str);
+	}
+
+	inline std::string WStringToString(const std::wstring& wstr)
+	{
+		using convert_typeX = std::codecvt_utf8<wchar_t>;
+		std::wstring_convert<convert_typeX, wchar_t> converterX;
+
+		return converterX.to_bytes(wstr);
+	}
 }

@@ -1,8 +1,8 @@
 #pragma once
 // The base class for a mesh
 #include <vector>
+#include "Material.h"
 
-using namespace DirectX;
 using namespace DirectX::SimpleMath;
 
 using VertexType = DirectX::VertexPositionNormalTexture;
@@ -14,6 +14,8 @@ public:
 	Mesh();
 
 	Mesh(std::vector<VertexType> Vertices, std::vector<DWORD> Indices);
+	// Create and initialize a mesh from assimp hathered data
+	Mesh(aiMesh* AssimpMesh, const aiScene* Scene, const std::wstring& ContainingFolder);
 
 	~Mesh();
 
@@ -23,10 +25,11 @@ public:
 	// Indices
 	std::vector<DWORD> Indices;
 
-	// Texture
+	// Texture and material
 	ID3D11ShaderResourceView* Texture;
+	MaterialData Material;
 	ID3D11SamplerState* TextureSamplerState;
-	LPCTSTR TexturePath;
+	std::wstring TexturePath = L""; // VERY TEMP
 
 	// Buffers
 	Microsoft::WRL::ComPtr<ID3D11Buffer> VertexBuffer;
@@ -41,9 +44,13 @@ public:
 	Microsoft::WRL::ComPtr<ID3D10Blob> VertexShader_Buffer;
 	Microsoft::WRL::ComPtr<ID3D10Blob> PixelShader_Buffer;
 
+	void AddVertex(DirectX::XMFLOAT3 Vertex, DirectX::XMFLOAT2 TextureCoord, DirectX::XMFLOAT3 Normal);
+
+	void AddIndex(DWORD NewIndex);
+
 	// World Matrix
-	XMMATRIX GetWorldMatrix() const { return WorldMatrix; }
-	void SetWorldMatrix(XMMATRIX val) { WorldMatrix = val; }
+	DirectX::XMMATRIX GetWorldMatrix() const { return WorldMatrix; }
+	void SetWorldMatrix(DirectX::XMMATRIX val) { WorldMatrix = val; }
 
 	// Transform setters and Getters
 	DirectX::XMFLOAT3 GetPosition() const { return Position; }
@@ -67,6 +74,8 @@ public:
 		UpdateWorldMatrix();
 	}
 
+	void SetMaterial(MaterialData MatData);
+
 	void UpdateWorldMatrix();
 
 	// Initialise shaders and buffers for this mesh
@@ -84,11 +93,11 @@ public:
 	void Draw(Microsoft::WRL::ComPtr<ID3D11DeviceContext1> DeviceContext);
 
 protected:
-	XMMATRIX WorldMatrix;
+	DirectX::XMMATRIX WorldMatrix;
 
 	// Mesh Transform
-	XMFLOAT3 Position = { 0,0,0 };
-	XMFLOAT3 Rotation = { 0,0,0 };
-	XMFLOAT3 Scale = { 1,1,1 };
+	DirectX::XMFLOAT3 Position = { 0,0,0 };
+	DirectX::XMFLOAT3 Rotation = { 0,0,0 };
+	DirectX::XMFLOAT3 Scale = { 1,1,1 };
 };
 

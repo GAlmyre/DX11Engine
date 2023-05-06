@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "Cube.h"
 
+using namespace DirectX;
+
 Cube::Cube()
 	:Mesh()
 {

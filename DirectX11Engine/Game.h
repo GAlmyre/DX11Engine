@@ -6,13 +6,26 @@
 
 #include "StepTimer.h"
 #include "Light.h"
+#include "Material.h"
 
-struct ConstantBufferPerFrame
+struct ConstantBufferPerFrame_PS
 {
-    Light SceneLight;
+    DirectionalLightData Sun = DirectionalLightData();
+    PointLightData PointLights[MAX_LIGHTS];
+    DirectX::XMFLOAT3 CameraPosition = DirectX::XMFLOAT3();
+    float LightsCount = 0;
+    //DirectX::XMFLOAT3 PadEnd = DirectX::XMFLOAT3(65, 65, 65);
+   
 };
 
-struct ConstantBufferPerObject
+struct ConstantBufferPerObject_PS
+{
+	MaterialData Mat = MaterialData();
+    //int bUseTexture;
+    //DirectX::XMFLOAT3 PadTex = DirectX::XMFLOAT3(0, 0, 0);
+};
+
+struct ConstantBufferPerObject_VS
 {
     DirectX::XMMATRIX WorldViewProj;
     DirectX::XMMATRIX World;
@@ -49,9 +62,14 @@ public:
     // Properties
     void GetDefaultSize( int& width, int& height ) const noexcept;
 
+    void LoadNewModel(std::wstring Path);
+
 	// ***  TODO : SCENE CLASS ***
 	std::vector<class Mesh*> Meshes;
-	Light* SceneLight;
+
+    // A scene can contain one directional light and MAX_LIGHTS PointLights
+	DirectionalLight* Sun;
+    std::vector<PointLight*> Lights;
 	class Camera* SceneCamera = nullptr;
 	// ***  SCENE CLASS ***
 
@@ -96,12 +114,18 @@ private:
     float Pitch = 0;
     float Yaw = 0;
 
-    // Constant buffer to hold our multiplied matrices
-    Microsoft::WRL::ComPtr<ID3D11Buffer> PerObjectBuffer;
-    Microsoft::WRL::ComPtr<ID3D11Buffer> PerFrameBuffer;
+    // ***** TODO : Where to put that ? *****
 
-    ConstantBufferPerObject PerObjectConstantBuffer;
-    ConstantBufferPerFrame PerFrameConstantBuffer;
+    // Constant buffers for vertex and pixel shader
+    Microsoft::WRL::ComPtr<ID3D11Buffer> PerObjectBuffer_VS;
+    Microsoft::WRL::ComPtr<ID3D11Buffer> PerFrameBuffer_PS;
+    Microsoft::WRL::ComPtr<ID3D11Buffer> PerObjectBuffer_PS;
+
+    ConstantBufferPerObject_VS PerObjectBuffStruct_VS;
+    ConstantBufferPerFrame_PS PerFrameBuffStruct_PS;
+    ConstantBufferPerObject_PS PerObjectBuffStruct_PS;
+
+    // ***** TODO : Where to put that ? *****
 
     DirectX::XMMATRIX WorldViewProj;
 

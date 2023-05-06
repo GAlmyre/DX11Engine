@@ -22,6 +22,8 @@ private:
 
 	void MoveUp(int UpValue);
 
-	void MoveForward(int ForwardValue);
+	void RotateYaw(float YawValue);
+
+	void RotatePitch(float PitchValue);
 };
 

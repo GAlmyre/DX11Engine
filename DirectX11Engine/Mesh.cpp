@@ -3,6 +3,8 @@
 #include "Mesh.h"
 #include <iostream>
 
+using namespace DirectX;
+
 Mesh::Mesh()
 {
 	SetWorldMatrix(XMMatrixIdentity());
@@ -12,7 +14,73 @@ Mesh::Mesh(std::vector<VertexType> Vertices, std::vector<DWORD> Indices)
 {
 	this->Vertices = Vertices;
 	this->Indices = Indices;
+	TexturePath = L"Assets/Textures/container.png";
+	SetWorldMatrix(XMMatrixIdentity());
+}
 
+Mesh::Mesh(aiMesh* AssimpMesh, const aiScene* Scene, const std::wstring& ContainingFolder)
+{
+	// Add VertPos, TexCoord and Normal for each Vertex 
+	for (int iVert = 0; iVert < AssimpMesh->mNumVertices; ++iVert)
+	{
+		XMFLOAT3 VertPos = { AssimpMesh->mVertices[iVert].x, AssimpMesh->mVertices[iVert].y, AssimpMesh->mVertices[iVert].z };
+		XMFLOAT2 TexCoord = XMFLOAT2(0, 0);
+		XMFLOAT3 Normal = XMFLOAT3(0, 0, 0);
+		if (AssimpMesh->mTextureCoords[0])
+		{
+			TexCoord = { AssimpMesh->mTextureCoords[0][iVert].x, AssimpMesh->mTextureCoords[0][iVert].y };
+		}
+		if (AssimpMesh->HasNormals())
+		{
+			Normal = { AssimpMesh->mNormals[iVert].x, AssimpMesh->mNormals[iVert].y, AssimpMesh->mNormals[iVert].z };
+		}
+
+		AddVertex(VertPos, TexCoord, Normal);
+	}
+
+	// Add indices
+	for (int iFaces = 0; iFaces < AssimpMesh->mNumFaces; ++iFaces)
+	{
+		for (int iIndex = 0; iIndex < AssimpMesh->mFaces->mNumIndices; ++iIndex)
+		{
+			AddIndex(AssimpMesh->mFaces[iFaces].mIndices[iIndex]);
+		}
+	}
+
+	// Get Materials
+	if (Scene->HasMaterials())
+	{
+		MaterialData Mat;
+		aiColor3D DiffuseColor;
+		aiColor3D AmbientColor;
+		aiColor3D SpecularColor;
+		float Shininess;
+
+		Scene->mMaterials[AssimpMesh->mMaterialIndex]->Get(AI_MATKEY_COLOR_DIFFUSE, DiffuseColor);
+		Scene->mMaterials[AssimpMesh->mMaterialIndex]->Get(AI_MATKEY_COLOR_AMBIENT, AmbientColor);
+		Scene->mMaterials[AssimpMesh->mMaterialIndex]->Get(AI_MATKEY_COLOR_SPECULAR, SpecularColor);
+		Scene->mMaterials[AssimpMesh->mMaterialIndex]->Get(AI_MATKEY_SHININESS, Shininess);
+
+		Mat.DiffuseColor = XMFLOAT3(DiffuseColor.r, DiffuseColor.g, DiffuseColor.b);
+		Mat.AmbientColor = XMFLOAT3(AmbientColor.r, AmbientColor.g, AmbientColor.b);
+		Mat.SpecularColor = XMFLOAT3(SpecularColor.r, SpecularColor.g, SpecularColor.b);
+		Mat.SpecExp = Shininess;
+
+		if (Scene->mMaterials[AssimpMesh->mMaterialIndex]->GetTextureCount(aiTextureType_DIFFUSE) > 0)
+		{
+			aiString AssimpTexturePath;
+			Scene->mMaterials[AssimpMesh->mMaterialIndex]->GetTexture(aiTextureType_DIFFUSE, 0, &AssimpTexturePath);
+			std::string StrTexturePath = std::string(AssimpTexturePath.C_Str());
+			std::wstring widePath = ContainingFolder;
+			widePath.append(DX::StringToWString(StrTexturePath));
+
+			TexturePath = widePath;
+		}
+
+		SetMaterial(Mat);
+	}
+
+	
 	SetWorldMatrix(XMMatrixIdentity());
 }
 
@@ -26,6 +94,21 @@ Mesh::~Mesh()
 	PixelShader->Release();
 	VertexShader_Buffer->Release();
 	PixelShader_Buffer->Release();
+}
+
+void Mesh::AddVertex(DirectX::XMFLOAT3 Vertex, DirectX::XMFLOAT2 TextureCoord, DirectX::XMFLOAT3 Normal)
+{
+	VertexType NewVertex;
+	NewVertex.position = Vertex;
+	NewVertex.textureCoordinate = TextureCoord;
+	NewVertex.normal = Normal;
+
+	Vertices.push_back(NewVertex);
+}
+
+void Mesh::AddIndex(DWORD NewIndex)
+{
+	Indices.push_back(NewIndex);
 }
 
 void Mesh::Draw(Microsoft::WRL::ComPtr<ID3D11DeviceContext1> DeviceContext)
@@ -45,11 +128,19 @@ void Mesh::Draw(Microsoft::WRL::ComPtr<ID3D11DeviceContext1> DeviceContext)
 	DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	// Set Texture
-	DeviceContext.Get()->PSSetShaderResources(0, 1, &Texture);
-	DeviceContext.Get()->PSSetSamplers(0, 1, &TextureSamplerState);
+	if (TexturePath != L"")
+	{
+		DeviceContext.Get()->PSSetShaderResources(0, 1, &Texture);
+		DeviceContext.Get()->PSSetSamplers(0, 1, &TextureSamplerState);
+	}
 
 	// Draw
 	DeviceContext->DrawIndexed(Indices.size(), 0, 0);
+}
+
+void Mesh::SetMaterial(MaterialData MatData)
+{
+	Material = MatData;
 }
 
 void Mesh::UpdateWorldMatrix()
@@ -74,19 +165,29 @@ void Mesh::InitMesh(Microsoft::WRL::ComPtr<ID3D11Device1> Device, Microsoft::WRL
 
 void Mesh::InitTextures(Microsoft::WRL::ComPtr<ID3D11Device1>& Device)
 {
-	// Init textures
-	DX::ThrowIfFailed(CreateWICTextureFromFile(Device.Get(), TexturePath, nullptr, &Texture));
-	D3D11_SAMPLER_DESC SamplerDesc;
-	ZeroMemory(&SamplerDesc, sizeof(SamplerDesc));
-	SamplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-	SamplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-	SamplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-	SamplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-	SamplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
-	SamplerDesc.MinLOD = 0;
-	SamplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
+	if (TexturePath != L"")
+	{
+		// Init textures
+		HRESULT Hr = CreateWICTextureFromFile(Device.Get(), TexturePath.c_str(), nullptr, &Texture);
+		if (Hr != E_FAIL)
+		{
+			D3D11_SAMPLER_DESC SamplerDesc;
+			ZeroMemory(&SamplerDesc, sizeof(SamplerDesc));
+			SamplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+			SamplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+			SamplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+			SamplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+			SamplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+			SamplerDesc.MinLOD = 0;
+			SamplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
 
-	DX::ThrowIfFailed(Device.Get()->CreateSamplerState(&SamplerDesc, &TextureSamplerState));
+			DX::ThrowIfFailed(Device.Get()->CreateSamplerState(&SamplerDesc, &TextureSamplerState));
+		}
+		else
+		{
+			TexturePath = L"";
+		}
+	}
 }
 
 void Mesh::InitInputLayout(Microsoft::WRL::ComPtr<ID3D11Device1> Device, Microsoft::WRL::ComPtr<ID3D11DeviceContext1> DeviceContext)
@@ -142,14 +243,14 @@ void Mesh::InitShaders(Microsoft::WRL::ComPtr<ID3D11Device1> Device, Microsoft::
 {
 	// Compile the shaders from file	
 	ID3DBlob* ShaderErrorMessage = nullptr;
-	HRESULT hr = D3DCompileFromFile(L"Shaders/SimpleVertexShader.hlsl", NULL, NULL, "main", "vs_4_0", 0, 0, VertexShader_Buffer.ReleaseAndGetAddressOf(), &ShaderErrorMessage);
+	HRESULT hr = D3DCompileFromFile(L"Shaders/SimpleVertexShader.hlsl", NULL, NULL, "main", "vs_5_0", 0, 0, VertexShader_Buffer.ReleaseAndGetAddressOf(), &ShaderErrorMessage);
 	if (FAILED(hr) && ShaderErrorMessage)
 	{
 		const char* errorMsg = (const char*)ShaderErrorMessage->GetBufferPointer();
 		MessageBox(nullptr, (LPCWSTR)errorMsg, L"Shader Compilation Error", MB_RETRYCANCEL);
 		ShaderErrorMessage->Release();
 	}
-	hr = D3DCompileFromFile(L"Shaders/SimplePixelShader.hlsl", NULL, NULL, "main", "ps_4_0", 0, 0, PixelShader_Buffer.GetAddressOf(), 0);
+	hr = D3DCompileFromFile(L"Shaders/SimplePixelShader.hlsl", NULL, NULL, "main", "ps_5_0", 0, 0, PixelShader_Buffer.GetAddressOf(), 0);
 	if (FAILED(hr) && ShaderErrorMessage)
 	{
 		const char* errorMsg = (const char*)ShaderErrorMessage->GetBufferPointer();
