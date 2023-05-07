@@ -2,8 +2,8 @@
 // Main.cpp
 //
 
-#include "pch.h"
-#include "Game.h"
+#include "Core/pch.h"
+#include "Renderer.h"
 #include <commctrl.h>
 #include "mshtmcid.h"
 #include <shobjidl_core.h>
@@ -21,7 +21,7 @@ using namespace DirectX;
 
 namespace
 {
-    std::unique_ptr<Game> g_game;
+    std::unique_ptr<Renderer> g_game;
     HWND Button;
 };
 
@@ -48,7 +48,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
     if (FAILED(hr))
         return 1;
 
-    g_game = std::make_unique<Game>();
+    g_game = std::make_unique<Renderer>();
 
     // Register class and create window
     {
@@ -175,7 +175,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     static bool s_fullscreen = false;
     // TODO: Set s_fullscreen to true if defaulting to fullscreen.
 
-    auto game = reinterpret_cast<Game*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+    auto game = reinterpret_cast<Renderer*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
  
     switch (message)
     {

@@ -1,13 +1,13 @@
 //
-// Game.cpp
+// Renderer.cpp
 //
 
-#include "pch.h"
-#include "Mesh.h"
-#include "Cube.h"
+#include "Core/pch.h"
+#include "Mesh/Mesh.h"
+#include "Mesh/Cube.h"
 #include "Camera.h"
 #include "GameInputManager.h"
-#include "Game.h"
+#include "Renderer.h"
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -21,7 +21,7 @@ using namespace DirectX::SimpleMath;
 
 using Microsoft::WRL::ComPtr;
 
-Game::Game() noexcept :
+Renderer::Renderer() noexcept :
     Window(nullptr),
     OutputWidth(800),
     OutputHeight(600),
@@ -30,7 +30,7 @@ Game::Game() noexcept :
 }
 
 // Initialize the Direct3D resources required to run.
-void Game::Initialize(HWND window, int width, int height)
+void Renderer::Initialize(HWND window, int width, int height)
 {
     Window = window;
     OutputWidth = std::max(width, 1);
@@ -55,7 +55,7 @@ void Game::Initialize(HWND window, int width, int height)
 }
 
 // Executes the basic game loop.
-void Game::Tick()
+void Renderer::Tick()
 {
     Timer.Tick([&]()
     {
@@ -66,7 +66,7 @@ void Game::Tick()
 }
 
 // Updates the world.
-void Game::Update(DX::StepTimer const& timer)
+void Renderer::Update(DX::StepTimer const& timer)
 {
     float elapsedTime = float(timer.GetElapsedSeconds());
 
@@ -76,7 +76,7 @@ void Game::Update(DX::StepTimer const& timer)
 }
 
 // Draws the scene.
-void Game::Render()
+void Renderer::Render()
 {
     // Don't try to render anything before the first Update.
     if (Timer.GetFrameCount() == 0)
@@ -85,6 +85,24 @@ void Game::Render()
     }
 
     Clear();
+
+	// Clear the views
+	D3dContext->ClearRenderTargetView(RenderTargetView.Get(), Colors::Aqua);
+
+    // GBUffer Pass
+	D3dContext->ClearDepthStencilView(DepthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+
+	D3dContext->OMSetRenderTargets(1, RenderTargetView.GetAddressOf(), DepthStencilView.Get());
+
+	// Set the viewport
+	CD3D11_VIEWPORT viewport(0.0f, 0.0f, static_cast<float>(OutputWidth), static_cast<float>(OutputHeight));
+	D3dContext->RSSetViewports(1, &viewport);
+
+	D3dContext->RSSetState(SolidState);
+	D3dContext->OMSetDepthStencilState(DepthStencilState.Get(), 0);
+
+
+    // LightingPass
 
     // Draw each mesh of the scene
     for (Mesh* Mesh : Meshes)
@@ -118,18 +136,11 @@ void Game::Render()
 		Mesh->Draw(D3dContext);
     }
 
-	// Text
-	/*Batch->Begin(SpriteSortMode_Texture);
-	wchar_t TextToRender[50] = L"";
-	swprintf(TextToRender, L"FPS : %.0f", 1/FrameTime);
-	Font->DrawString(Batch.get(), TextToRender, FontPos, Colors::White, 0.f, XMFLOAT2(OutputWidth, OutputHeight), .5);
-	Batch->End();*/
-
     Present();
 }
 
 // Helper method to clear the back buffers.
-void Game::Clear()
+void Renderer::Clear()
 {
     // Clear the views.
     D3dContext->ClearRenderTargetView(RenderTargetView.Get(), Colors::Aqua);
@@ -146,7 +157,7 @@ void Game::Clear()
 }
 
 // Presents the back buffer contents to the screen.
-void Game::Present()
+void Renderer::Present()
 {
     // The first argument instructs DXGI to block until VSync, putting the application
     // to sleep until the next VSync. This ensures we don't waste any cycles rendering
@@ -165,47 +176,47 @@ void Game::Present()
 }
 
 // Message handlers
-void Game::OnActivated()
+void Renderer::OnActivated()
 {
-    // TODO: Game is becoming active window.
+    // TODO: Renderer is becoming active window.
 }
 
-void Game::OnDeactivated()
+void Renderer::OnDeactivated()
 {
-    // TODO: Game is becoming background window.
+    // TODO: Renderer is becoming background window.
 }
 
-void Game::OnSuspending()
+void Renderer::OnSuspending()
 {
-    // TODO: Game is being power-suspended (or minimized).
+    // TODO: Renderer is being power-suspended (or minimized).
 }
 
-void Game::OnResuming()
+void Renderer::OnResuming()
 {
     Timer.ResetElapsedTime();
 
-    // TODO: Game is being power-resumed (or returning from minimize).
+    // TODO: Renderer is being power-resumed (or returning from minimize).
 }
 
-void Game::OnWindowSizeChanged(int width, int height)
+void Renderer::OnWindowSizeChanged(int width, int height)
 {
     OutputWidth = std::max(width, 1);
     OutputHeight = std::max(height, 1);
 
     CreateResources();
 
-    // TODO: Game window is being resized.
+    // TODO: Renderer window is being resized.
 }
 
 // Properties
-void Game::GetDefaultSize(int& width, int& height) const noexcept
+void Renderer::GetDefaultSize(int& width, int& height) const noexcept
 {
     // TODO: Change to desired default window size (note minimum size is 320x200).
     width = 1920;
     height = 1080;
 }
 
-void Game::LoadNewModel(std::wstring Path)
+void Renderer::LoadNewModel(std::wstring Path)
 {
     // load a mesh  
     wchar_t Dir[_MAX_DIR];
@@ -238,7 +249,7 @@ void Game::LoadNewModel(std::wstring Path)
 }
 
 // These are the resources that depend on the device.
-void Game::CreateDevice()
+void Renderer::CreateDevice()
 {
     UINT creationFlags = 0;
 
@@ -333,13 +344,17 @@ void Game::CreateDevice()
 }
 
 // Allocate all memory resources that change on a window SizeChanged event.
-void Game::CreateResources()
+void Renderer::CreateResources()
 {
     // Clear the previous window size specific context.
     ID3D11RenderTargetView* nullViews [] = { nullptr };
     D3dContext->OMSetRenderTargets(_countof(nullViews), nullViews, nullptr);
     RenderTargetView.Reset();
     DepthStencilView.Reset();
+    GBufferAlbedo.Reset();
+    GBufferNormals.Reset();
+    GBufferPositions.Reset();
+
     D3dContext->Flush();
 
     const UINT backBufferWidth = static_cast<UINT>(OutputWidth);
@@ -415,6 +430,11 @@ void Game::CreateResources()
 
     // Create a view interface on the rendertarget to use on bind.
     DX::ThrowIfFailed(D3dDevice->CreateRenderTargetView(backBuffer.Get(), nullptr, RenderTargetView.ReleaseAndGetAddressOf()));
+
+    // GBuffer
+    DX::ThrowIfFailed(D3dDevice->CreateRenderTargetView(backBuffer.Get(), nullptr, GBufferAlbedo.ReleaseAndGetAddressOf()));
+    DX::ThrowIfFailed(D3dDevice->CreateRenderTargetView(backBuffer.Get(), nullptr, GBufferPositions.ReleaseAndGetAddressOf()));
+    DX::ThrowIfFailed(D3dDevice->CreateRenderTargetView(backBuffer.Get(), nullptr, GBufferNormals.ReleaseAndGetAddressOf()));
 
     // Allocate a 2-D surface as the depth/stencil buffer and
     // create a DepthStencil view on this surface to use on bind.
@@ -501,7 +521,7 @@ void Game::CreateResources()
     DX::ThrowIfFailed(D3dDevice->CreateDepthStencilState(&DepthStencilDesc, DepthStencilState.GetAddressOf()));
 }
 
-void Game::OnDeviceLost()
+void Renderer::OnDeviceLost()
 {
     // TODO: Add Direct3D resource cleanup here.
 
@@ -512,6 +532,10 @@ void Game::OnDeviceLost()
     delete Sun;
     DepthStencilView.Reset();
     RenderTargetView.Reset();
+	GBufferAlbedo.Reset();
+	GBufferNormals.Reset();
+	GBufferPositions.Reset();
+
     PerObjectBuffer_VS->Release();
     PerFrameBuffer_PS->Release();
     SolidState->Release();

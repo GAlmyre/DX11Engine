@@ -1,14 +1,14 @@
 #pragma once
-#include "pch.h"
+#include "Core/pch.h"
 
 class GameInputManager
 {
 public:
-	void Initialize(HWND Window, class Game* Owner);
+	void Initialize(HWND Window, class Renderer* Owner);
 
 	void Update();
 
-	Game* Owner;
+	Renderer* Owner;
 
 	std::unique_ptr<DirectX::Keyboard> Keyboard;
 	std::unique_ptr<DirectX::Mouse> Mouse;

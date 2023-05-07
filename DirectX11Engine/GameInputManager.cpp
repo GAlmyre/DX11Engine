@@ -1,5 +1,5 @@
-#include "pch.h"
-#include "Game.h"
+#include "Core/pch.h"
+#include "Core/Renderer.h"
 #include "Camera.h"
 
 #include "GameInputManager.h"
@@ -8,7 +8,7 @@ using namespace DirectX;
 
 extern void ExitGame() noexcept;
 
-void GameInputManager::Initialize(HWND Window, Game* InOwner)
+void GameInputManager::Initialize(HWND Window, Renderer* InOwner)
 {
 	// Input 
 	Keyboard = std::make_unique<DirectX::Keyboard>();

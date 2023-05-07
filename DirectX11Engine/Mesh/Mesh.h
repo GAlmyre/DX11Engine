@@ -7,6 +7,8 @@ using namespace DirectX::SimpleMath;
 
 using VertexType = DirectX::VertexPositionNormalTexture;
 
+class Shader;
+
 class Mesh
 {
 public:
@@ -14,7 +16,7 @@ public:
 	Mesh();
 
 	Mesh(std::vector<VertexType> Vertices, std::vector<DWORD> Indices);
-	// Create and initialize a mesh from assimp hathered data
+	// Create and initialize a mesh from assimp gathered data
 	Mesh(aiMesh* AssimpMesh, const aiScene* Scene, const std::wstring& ContainingFolder);
 
 	~Mesh();
@@ -38,11 +40,8 @@ public:
 	// Input layout
 	Microsoft::WRL::ComPtr<ID3D11InputLayout> InputLayout;
 
-	// Shaders
-	Microsoft::WRL::ComPtr<ID3D11VertexShader> VertexShader;
-	Microsoft::WRL::ComPtr<ID3D11PixelShader> PixelShader;
-	Microsoft::WRL::ComPtr<ID3D10Blob> VertexShader_Buffer;
-	Microsoft::WRL::ComPtr<ID3D10Blob> PixelShader_Buffer;
+	Shader* VShader = nullptr;
+	Shader* PShader = nullptr;
 
 	void AddVertex(DirectX::XMFLOAT3 Vertex, DirectX::XMFLOAT2 TextureCoord, DirectX::XMFLOAT3 Normal);
 

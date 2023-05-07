@@ -1,7 +1,8 @@
-#include "pch.h"
+#include "Core/pch.h"
 #include <d3dcompiler.h>
 #include "Mesh.h"
 #include <iostream>
+#include "Shaders/Shader.h"
 
 using namespace DirectX;
 
@@ -90,10 +91,8 @@ Mesh::~Mesh()
 	VertexBuffer->Release();
 	IndexBuffer->Release();
 	Vertices.clear();
-	VertexShader->Release();
-	PixelShader->Release();
-	VertexShader_Buffer->Release();
-	PixelShader_Buffer->Release();
+	delete VShader;
+	delete PShader;
 }
 
 void Mesh::AddVertex(DirectX::XMFLOAT3 Vertex, DirectX::XMFLOAT2 TextureCoord, DirectX::XMFLOAT3 Normal)
@@ -114,8 +113,11 @@ void Mesh::AddIndex(DWORD NewIndex)
 void Mesh::Draw(Microsoft::WRL::ComPtr<ID3D11DeviceContext1> DeviceContext)
 {
 	// Set shaders
-	DeviceContext->VSSetShader(VertexShader.Get(), 0, 0);
-	DeviceContext->PSSetShader(PixelShader.Get(), 0, 0);
+	Microsoft::WRL::ComPtr<ID3D11VertexShader> VSRef = VShader->GetVertexShaderRef();
+	Microsoft::WRL::ComPtr<ID3D11PixelShader> PSRef = PShader->GetPixelShaderRef();
+
+	DeviceContext->VSSetShader(VSRef.Get(), 0, 0);
+	DeviceContext->PSSetShader(PSRef.Get(), 0, 0);
 
 	// Set Vertex/Index Buffer
 	UINT stride = sizeof(VertexType);
@@ -200,7 +202,7 @@ void Mesh::InitInputLayout(Microsoft::WRL::ComPtr<ID3D11Device1> Device, Microso
 		{ "TEXCOORD",	0, DXGI_FORMAT_R32G32_FLOAT,	0, 24,	D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	};
 	UINT LayoutNum = ARRAYSIZE(Layout);
-	DX::ThrowIfFailed(Device->CreateInputLayout(Layout, LayoutNum, VertexShader_Buffer->GetBufferPointer(), VertexShader_Buffer->GetBufferSize(), InputLayout.GetAddressOf()));
+	DX::ThrowIfFailed(Device->CreateInputLayout(Layout, LayoutNum, VShader->ShaderBuffer->GetBufferPointer(), VShader->ShaderBuffer->GetBufferSize(), InputLayout.GetAddressOf()));
 }
 
 void Mesh::InitVertexBuffer(Microsoft::WRL::ComPtr<ID3D11Device1> Device, Microsoft::WRL::ComPtr<ID3D11DeviceContext1> DeviceContext)
@@ -241,24 +243,8 @@ void Mesh::InitVertexBuffer(Microsoft::WRL::ComPtr<ID3D11Device1> Device, Micros
 
 void Mesh::InitShaders(Microsoft::WRL::ComPtr<ID3D11Device1> Device, Microsoft::WRL::ComPtr<ID3D11DeviceContext1> DeviceContext)
 {
-	// Compile the shaders from file	
-	ID3DBlob* ShaderErrorMessage = nullptr;
-	HRESULT hr = D3DCompileFromFile(L"Shaders/SimpleVertexShader.hlsl", NULL, NULL, "main", "vs_5_0", 0, 0, VertexShader_Buffer.ReleaseAndGetAddressOf(), &ShaderErrorMessage);
-	if (FAILED(hr) && ShaderErrorMessage)
-	{
-		const char* errorMsg = (const char*)ShaderErrorMessage->GetBufferPointer();
-		MessageBox(nullptr, (LPCWSTR)errorMsg, L"Shader Compilation Error", MB_RETRYCANCEL);
-		ShaderErrorMessage->Release();
-	}
-	hr = D3DCompileFromFile(L"Shaders/SimplePixelShader.hlsl", NULL, NULL, "main", "ps_5_0", 0, 0, PixelShader_Buffer.GetAddressOf(), 0);
-	if (FAILED(hr) && ShaderErrorMessage)
-	{
-		const char* errorMsg = (const char*)ShaderErrorMessage->GetBufferPointer();
-		MessageBox(nullptr, (LPCWSTR)errorMsg, L"Shader Compilation Error", MB_RETRYCANCEL);
-		ShaderErrorMessage->Release();
-	}
-
-	// Create the shaders and set them
-	DX::ThrowIfFailed(Device->CreateVertexShader(VertexShader_Buffer->GetBufferPointer(), VertexShader_Buffer->GetBufferSize(), NULL, VertexShader.GetAddressOf()));
-	DX::ThrowIfFailed(Device->CreatePixelShader(PixelShader_Buffer->GetBufferPointer(), PixelShader_Buffer->GetBufferSize(), NULL, PixelShader.GetAddressOf()));
+	// Compile the shaders from file
+	LPCWSTR Path = L"Shaders/SimpleVertexShader.hlsl";
+	VShader = new Shader(L"Shaders/SimpleVertexShader.hlsl", EShaderType::VertexShader, Device);
+	PShader = new Shader(L"Shaders/SimplePixelShader.hlsl", EShaderType::PixelShader, Device);
 }

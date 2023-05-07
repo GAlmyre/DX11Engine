@@ -1,7 +1,7 @@
 // OBJ_Loader.h - A Single Header OBJ Model Loader
 
 #pragma once
-#include "pch.h"
+#include "Core/pch.h"
 #include "Material.h"
 // Iostream - STD I/O Library
 #include <iostream>
