@@ -73,6 +73,7 @@ Mesh::Mesh(aiMesh* AssimpMesh, const aiNode* Node, const aiScene* Scene, const s
 		Mat.DiffuseColor = XMFLOAT3(DiffuseColor.r, DiffuseColor.g, DiffuseColor.b);
 		Mat.AmbientColor = XMFLOAT3(AmbientColor.r, AmbientColor.g, AmbientColor.b);
 		Mat.SpecularColor = XMFLOAT3(SpecularColor.r, SpecularColor.g, SpecularColor.b);
+
 		Mat.SpecExp = Shininess < 0.0f ? 64 : Shininess;
 
 		if (Scene->mMaterials[AssimpMesh->mMaterialIndex]->GetTextureCount(aiTextureType_DIFFUSE) > 0)
@@ -87,7 +88,7 @@ Mesh::Mesh(aiMesh* AssimpMesh, const aiNode* Node, const aiScene* Scene, const s
 		}
 		else
 		{
-			TexturePath = L"Assets/Textures/rocks.png";
+			TexturePath = L"Assets/Textures/DefaultTexture.png";
 		}
 
 		SetMaterial(Mat);
@@ -100,8 +101,6 @@ Mesh::~Mesh()
 	VertexBuffer->Release();
 	IndexBuffer->Release();
 	Vertices.clear();
-	delete VShader;
-	delete PShader;
 }
 
 void Mesh::AddVertex(DirectX::XMFLOAT3 Vertex, DirectX::XMFLOAT2 TextureCoord, DirectX::XMFLOAT3 Normal)
@@ -121,13 +120,6 @@ void Mesh::AddIndex(DWORD NewIndex)
 
 void Mesh::Draw(Microsoft::WRL::ComPtr<ID3D11DeviceContext1> DeviceContext)
 {
-	//// Set shaders
-	//Microsoft::WRL::ComPtr<ID3D11VertexShader> VSRef = VShader->GetVertexShaderRef();
-	//Microsoft::WRL::ComPtr<ID3D11PixelShader> PSRef = PShader->GetPixelShaderRef();
-
-	//DeviceContext->VSSetShader(VSRef.Get(), 0, 0);
-	//DeviceContext->PSSetShader(PSRef.Get(), 0, 0);
-
 	// Set Vertex/Index Buffer
 	UINT stride = sizeof(VertexType);
 	UINT offset = 0;
@@ -161,13 +153,9 @@ void Mesh::UpdateWorldMatrix()
 
 void Mesh::InitMesh(Microsoft::WRL::ComPtr<ID3D11Device1> Device, Microsoft::WRL::ComPtr<ID3D11DeviceContext1> DeviceContext)
 {
-	//InitShaders(Device, DeviceContext);
-
 	InitTextures(Device);
 
 	InitVertexBuffer(Device, DeviceContext);
-
-	//InitInputLayout(Device, DeviceContext);
 }
 
 void Mesh::InitTextures(Microsoft::WRL::ComPtr<ID3D11Device1>& Device)
@@ -195,19 +183,6 @@ void Mesh::InitTextures(Microsoft::WRL::ComPtr<ID3D11Device1>& Device)
 			TexturePath = L"";
 		}
 	}
-}
-
-void Mesh::InitInputLayout(Microsoft::WRL::ComPtr<ID3D11Device1> Device, Microsoft::WRL::ComPtr<ID3D11DeviceContext1> DeviceContext)
-{
-	// Create and set the InputLayout
-	D3D11_INPUT_ELEMENT_DESC Layout[] =
-	{
-		{ "POSITION",	0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,	D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "NORMAL",		0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12,	D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD",	0, DXGI_FORMAT_R32G32_FLOAT,	0, 24,	D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	};
-	UINT LayoutNum = ARRAYSIZE(Layout);
-	DX::ThrowIfFailed(Device->CreateInputLayout(Layout, LayoutNum, VShader->ShaderBuffer->GetBufferPointer(), VShader->ShaderBuffer->GetBufferSize(), InputLayout.GetAddressOf()));
 }
 
 void Mesh::InitVertexBuffer(Microsoft::WRL::ComPtr<ID3D11Device1> Device, Microsoft::WRL::ComPtr<ID3D11DeviceContext1> DeviceContext)
@@ -244,11 +219,4 @@ void Mesh::InitVertexBuffer(Microsoft::WRL::ComPtr<ID3D11Device1> Device, Micros
 	IndexBufferData.pSysMem = &Indices[0];
 
 	DX::ThrowIfFailed(Device->CreateBuffer(&IndexBufferDesc, &IndexBufferData, IndexBuffer.GetAddressOf()));
-}
-
-void Mesh::InitShaders(Microsoft::WRL::ComPtr<ID3D11Device1> Device, Microsoft::WRL::ComPtr<ID3D11DeviceContext1> DeviceContext)
-{
-	// Compile the shaders from file
-	VShader = new Shader(L"Shaders/SimpleVertexShader.hlsl", EShaderType::VertexShader, Device);
-	PShader = new Shader(L"Shaders/SimplePixelShader.hlsl", EShaderType::PixelShader, Device);
 }

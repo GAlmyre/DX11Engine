@@ -86,15 +86,15 @@ void GameInputManager::Update()
 		Owner->SceneCamera->Speed -= .05;
 		if (Owner->SceneCamera->Speed <= 0)
 		{
-			Owner->SceneCamera->Speed = .05;
+			Owner->SceneCamera->Speed = .1;
 		}
 	}
 	if (KeyboardState.NumPad3)
 	{
 		Owner->SceneCamera->Speed += .1;
-		if (Owner->SceneCamera->Speed >= 20)
+		if (Owner->SceneCamera->Speed >= 50)
 		{
-			Owner->SceneCamera->Speed = 20;
+			Owner->SceneCamera->Speed = 50;
 		}
 	}
 	if (KeyboardState.N)

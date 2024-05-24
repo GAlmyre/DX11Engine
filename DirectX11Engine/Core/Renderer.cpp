@@ -230,6 +230,8 @@ void Renderer::GetDefaultSize(int& width, int& height) const noexcept
 
 void Renderer::LoadNewModel(std::wstring Path)
 {
+    SceneCamera->SetPosition(XMVectorSet(0.0f, 0.0f, -7.0f, 0.0f));
+
     // load a mesh  
     wchar_t Dir[_MAX_DIR];
     wchar_t Dump[_MAX_PATH];
@@ -278,7 +280,13 @@ void Renderer::LoadNewModel(std::wstring Path)
 					XMFLOAT3 Direction = XMFLOAT3(CurrentLight->mDirection.x, CurrentLight->mDirection.y, CurrentLight->mDirection.z);
 
 					DirectionalLight* Directional = new DirectionalLight(Position, Ambient, Diffuse, Specular, Direction);
-                    Sun = Directional;
+                    // We add some ambient as we do not have GI for now
+                    if (Directional->AmbientColor.x == 0.0f && Directional->AmbientColor.y == 0.0f && Directional->AmbientColor.z == 0.0f);
+                    {
+                        Directional->AmbientColor = XMFLOAT4(.2f, .2f, .2f, 1.0f);
+                    }
+
+					Sun = Directional;
 				}
 
 				if (CurrentLight->mType == aiLightSource_POINT)
@@ -293,11 +301,10 @@ void Renderer::LoadNewModel(std::wstring Path)
 
 		if (!Sun)
 		{
-			Sun = new DirectionalLight(XMFLOAT3(-2, 5, -2), XMFLOAT4(.3f, .3f, .3f, 1.0f), XMFLOAT4(1.f, 1.f, 1.f, 1.0f), XMFLOAT4(1.f, 1.f, 1.f, 1.0f), XMFLOAT3(0.5f, 0.5f, -0.5f));
+			Sun = new DirectionalLight(XMFLOAT3(-2, 5, -2), XMFLOAT4(.2f, .2f, .2f, 1.0f), XMFLOAT4(1.f, 1.f, 1.f, 1.0f), XMFLOAT4(1.f, 1.f, 1.f, 1.0f), XMFLOAT3(0.5f, 0.5f, -0.5f));
 		}
 
 		Lantern = new PointLight(XMFLOAT3(0, 300, 0), XMFLOAT4(0.05f, 0.05f, 0.05f, 1.0f), XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT4(1.0f, .0f, .0f, 1.0f), XMFLOAT3(1.0f, 0.007f, 0.0002f));
-
     }
 }
 
@@ -391,7 +398,6 @@ void Renderer::CreateDevice()
 
     // Initialize the camera
     SceneCamera = new Camera();
-    SceneCamera->SetPosition(XMVectorSet(0.0f, 0.0f, -7.0f, 0.0f));
 
     // load a mesh
     LoadNewModel(L"Assets/Models/Shapes/TestScene.fbx");

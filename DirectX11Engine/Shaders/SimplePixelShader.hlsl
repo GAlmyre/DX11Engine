@@ -53,7 +53,7 @@ struct PS_INPUT
 
 float3 AmbientLighting(float4 LightAmbient)
 {
-    return CurrentMaterial.AmbientColor * LightAmbient;
+    return /*CurrentMaterial.AmbientColor **/ LightAmbient;
 }
 
 float3 DiffuseLighting(float3 N, float3 L, float4 LightDiffuse, float2 TexCoord)
@@ -74,7 +74,7 @@ float3 SpecularLighting(float3 N, float3 L, float3 V, float4 LightSpecular)
         SpecularTerm = pow(clamp(dot(N, H), 0, 1), CurrentMaterial.SpecExponent);
     }
     
-    return CurrentMaterial.SpecularColor * LightSpecular, SpecularTerm;
+    return /*CurrentMaterial.SpecularColor **/ LightSpecular, SpecularTerm;
 }
 
 float3 CalculateDirectional(DirectionalLight Light, float3 Normal, float3 ViewDir, float2 TexCoord)

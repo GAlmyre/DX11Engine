@@ -37,12 +37,6 @@ public:
 	Microsoft::WRL::ComPtr<ID3D11Buffer> VertexBuffer;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> IndexBuffer;
 
-	// Input layout
-	Microsoft::WRL::ComPtr<ID3D11InputLayout> InputLayout;
-
-	Shader* VShader = nullptr;
-	Shader* PShader = nullptr;
-
 	void AddVertex(DirectX::XMFLOAT3 Vertex, DirectX::XMFLOAT2 TextureCoord, DirectX::XMFLOAT3 Normal);
 
 	void AddIndex(DWORD NewIndex);
@@ -82,11 +76,7 @@ public:
 
 	void InitTextures(Microsoft::WRL::ComPtr<ID3D11Device1>& Device);
 
-	void InitInputLayout(Microsoft::WRL::ComPtr<ID3D11Device1> Device, Microsoft::WRL::ComPtr<ID3D11DeviceContext1> DeviceContext);
-
 	void InitVertexBuffer(Microsoft::WRL::ComPtr<ID3D11Device1> Device, Microsoft::WRL::ComPtr<ID3D11DeviceContext1> DeviceContext);
-
-	void InitShaders(Microsoft::WRL::ComPtr<ID3D11Device1> Device, Microsoft::WRL::ComPtr<ID3D11DeviceContext1> DeviceContext);
 
 	// Render the mesh
 	void Draw(Microsoft::WRL::ComPtr<ID3D11DeviceContext1> DeviceContext);
