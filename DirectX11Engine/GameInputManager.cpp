@@ -97,6 +97,10 @@ void GameInputManager::Update()
 			Owner->SceneCamera->Speed = 10;
 		}
 	}
+	if (KeyboardState.G)
+	{
+
+	}
 }
 
 void GameInputManager::Zoom(int ZoomValue)

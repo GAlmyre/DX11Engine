@@ -11,7 +11,7 @@
 struct ConstantBufferPerFrame_PS
 {
     DirectionalLightData Sun = DirectionalLightData();
-    PointLightData PointLights[MAX_LIGHTS];
+    PointLightData PointLight = PointLightData();
     DirectX::XMFLOAT3 CameraPosition = DirectX::XMFLOAT3();
     float LightsCount = 0;
    
@@ -61,11 +61,14 @@ public:
 
     void LoadNewModel(std::wstring Path);
 
+    void ParseAssimpNode(aiNode* Node, const aiScene* Scene, wchar_t* Dir);
+
 	// ***  TODO : SCENE CLASS ***
 	std::vector<class Mesh*> Meshes;
 
     // A scene can contain one directional light and MAX_LIGHTS PointLights
-	DirectionalLight* Sun;
+	DirectionalLight* Sun = nullptr;
+    PointLight* Lantern = nullptr;
     std::vector<PointLight*> Lights;
 	class Camera* SceneCamera = nullptr;
 	// ***  SCENE CLASS ***

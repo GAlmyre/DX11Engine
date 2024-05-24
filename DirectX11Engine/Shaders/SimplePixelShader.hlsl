@@ -31,7 +31,7 @@ cbuffer cbPerFrame
 {
     // The directional light of our scene
     DirectionalLight Sun;
-    PointLight Lights[5];
+    PointLight Light;
     float3 CamPosition;
     float LightsCount;
 };
@@ -77,18 +77,40 @@ float3 SpecularLighting(float3 N, float3 L, float3 V, float4 LightSpecular)
     return CurrentMaterial.SpecularColor * LightSpecular, SpecularTerm;
 }
 
-float4 main(PS_INPUT input) : SV_TARGET
+float3 CalculateDirectional(DirectionalLight Light, float3 Normal, float3 ViewDir, float2 TexCoord)
+{ 
+    float3 LightDir = normalize(-Light.Dir);
+    
+    float3 Ambient = AmbientLighting(Light.Ambient);
+    float3 Diffuse = DiffuseLighting(Normal, LightDir, Light.Diffuse, TexCoord);
+    float3 Specular = SpecularLighting(Normal, LightDir, ViewDir, Light.Specular);
+    
+    return Ambient + Diffuse + Specular;
+}
+
+float3 CalculatePointLight(PointLight Light, float3 WorldPosition, float3 Normal, float3 ViewDir, float2 TexCoord)
 {
-    // distance between light and worldPos
-    float3 L = normalize(-Sun.Dir);
+    float3 LightDir = normalize(Light.Position - WorldPosition);
+    float Distance = length(Light.Position - WorldPosition);
+    float Attenuation = 1.0 / (Light.Attenuation.x + Light.Attenuation.y * Distance + Light.Attenuation.z * (Distance * Distance));
+    
+    float DiffuseTerm = saturate(dot(Normal, LightDir));
+    
+    float3 Ambient = AmbientLighting(Light.Ambient) * Attenuation;
+    float3 Diffuse = DiffuseLighting(Normal, LightDir, Light.Diffuse, TexCoord) * Attenuation;
+    float3 Specular = SpecularLighting(Normal, LightDir, ViewDir, Light.Specular) * Attenuation;
+    
+    return Ambient + Diffuse + Specular;
+}
+
+float4 main(PS_INPUT input) : SV_TARGET
+{  
     float3 N = normalize(input.Normal);
     float3 V = normalize(CamPosition - input.WorldPos);
-    
-    float3 Ambient = AmbientLighting(Sun.Ambient);
-    float3 Diffuse = DiffuseLighting(N, L, Sun.Diffuse, input.TexCoord);
-    float3 Specular = SpecularLighting(N, L, V, Sun.Specular);
 
-    float3 FinalColor = Texture.Sample(ObjectSamplerState, input.TexCoord) * (Ambient + Diffuse + Specular);
-    
+    float3 FinalColor = Texture.Sample(ObjectSamplerState, input.TexCoord) * CalculateDirectional(Sun, N, V, input.TexCoord);
+    //float3 FinalColor = Texture.Sample(ObjectSamplerState, input.TexCoord) * CalculatePointLight(Light, input.WorldPos, N, V, input.TexCoord);
+    //float3 FinalColor = Texture.Sample(ObjectSamplerState, input.TexCoord) * CalculatePointLight(Light, input.WorldPos, N, V, input.TexCoord) * 0.01;
+    //float3 FinalColor = input.Normal;
     return float4(saturate(FinalColor), 1.0f);    
 }

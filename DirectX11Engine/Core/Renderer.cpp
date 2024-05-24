@@ -113,24 +113,25 @@ void Renderer::Render()
         PerObjectBuffStruct_VS.World = XMMatrixTranspose(Mesh->GetWorldMatrix());
 
 		PerFrameBuffStruct_PS.Sun = Sun->GetLightData();
-        for (int i = 0; i < MAX_LIGHTS && i < Lights.size(); ++i)
-        {
-            PerFrameBuffStruct_PS.PointLights[i] = Lights[i]->GetLightData();
-        }
+        PerFrameBuffStruct_PS.PointLight = Lantern->GetLightData();
+		/*   for (int i = 0; i < MAX_LIGHTS && i < Lights.size(); ++i)
+		   {
+			   PerFrameBuffStruct_PS.PointLights[i] = Lights[i]->GetLightData();
+		   }*/
         PerObjectBuffStruct_PS.Mat = Mesh->Material;
 
-		XMFLOAT3 CamPos;
+		XMFLOAT3 CamPos{};
 		XMStoreFloat3(&CamPos, SceneCamera->GetPosition());
 		PerFrameBuffStruct_PS.CameraPosition = CamPos;
         PerFrameBuffStruct_PS.LightsCount = Lights.size();
 
-		D3dContext->UpdateSubresource(PerFrameBuffer_PS.Get(), 0, NULL, &PerFrameBuffStruct_PS, 0, 0);
+		D3dContext->UpdateSubresource(PerFrameBuffer_PS.Get(), 0, nullptr, &PerFrameBuffStruct_PS, 0, 0);
 		D3dContext->PSSetConstantBuffers(0, 1, PerFrameBuffer_PS.GetAddressOf());
 
-		D3dContext->UpdateSubresource(PerObjectBuffer_PS.Get(), 0, NULL, &PerObjectBuffStruct_PS, 0, 0);
+		D3dContext->UpdateSubresource(PerObjectBuffer_PS.Get(), 0, nullptr, &PerObjectBuffStruct_PS, 0, 0);
 		D3dContext->PSSetConstantBuffers(1, 1, PerObjectBuffer_PS.GetAddressOf());
 
-		D3dContext->UpdateSubresource(PerObjectBuffer_VS.Get(), 0, NULL, &PerObjectBuffStruct_VS, 0, 0);
+		D3dContext->UpdateSubresource(PerObjectBuffer_VS.Get(), 0, nullptr, &PerObjectBuffStruct_VS, 0, 0);
 		D3dContext->VSSetConstantBuffers(0, 1, PerObjectBuffer_VS.GetAddressOf());
 		
 		Mesh->Draw(D3dContext);
@@ -229,22 +230,81 @@ void Renderer::LoadNewModel(std::wstring Path)
 
 	const aiScene* Scene = Importer.ReadFile(DX::WStringToString(Path), aiProcess_CalcTangentSpace |
 		aiProcess_Triangulate |
-        aiProcess_MakeLeftHanded |
+        //aiProcess_MakeLeftHanded |
         aiProcess_FlipUVs |
 		aiProcess_JoinIdenticalVertices |
 		aiProcess_SortByPType);
 
     if (Scene)
     {
-        for (unsigned int i = 0; i < Scene->mNumMeshes; ++i)
+        // Extract the models
+        aiNode* Node = Scene->mRootNode;
+        ParseAssimpNode(Node, Scene, Dir);
+
+        if (Sun)
         {
-            aiMesh* CurrentMesh = Scene->mMeshes[i];
-
-            Mesh* NewMesh = new Mesh(CurrentMesh, Scene, std::wstring(Dir));
-
-            NewMesh->InitMesh(D3dDevice, D3dContext);
-            Meshes.push_back(NewMesh);
+            delete Sun;
+            Sun = nullptr;
         }
+            
+        if (Lantern)
+            delete Lantern;
+
+        // Extract the lights
+        for (unsigned int i = 0; i < Scene->mNumLights; ++i)
+        {
+            aiLight* CurrentLight = Scene->mLights[i];
+
+            if (CurrentLight)
+            {
+				XMFLOAT3 Position = XMFLOAT3(CurrentLight->mPosition.x, CurrentLight->mPosition.y, CurrentLight->mPosition.z);
+				XMFLOAT4 Ambient = XMFLOAT4(CurrentLight->mColorAmbient.r, CurrentLight->mColorAmbient.g, CurrentLight->mColorAmbient.b, 1.0f);
+				XMFLOAT4 Diffuse = XMFLOAT4(CurrentLight->mColorDiffuse.r, CurrentLight->mColorDiffuse.g, CurrentLight->mColorDiffuse.b, 1.0f);
+				XMFLOAT4 Specular = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);// XMFLOAT4(CurrentLight->mColorSpecular.r, CurrentLight->mColorSpecular.g, CurrentLight->mColorSpecular.b, 1.0f);
+
+				if (CurrentLight->mType == aiLightSource_DIRECTIONAL)
+				{
+					XMFLOAT3 Direction = XMFLOAT3(CurrentLight->mDirection.x, CurrentLight->mDirection.y, CurrentLight->mDirection.z);
+
+					DirectionalLight* Directional = new DirectionalLight(Position, Ambient, Diffuse, Specular, Direction);
+                    Sun = Directional;
+				}
+
+				if (CurrentLight->mType == aiLightSource_POINT)
+				{
+					XMFLOAT3 Attenuation = XMFLOAT3(CurrentLight->mAttenuationConstant, CurrentLight->mAttenuationLinear, CurrentLight->mAttenuationQuadratic);
+
+					PointLight* Directional = new PointLight(Position, Ambient, Diffuse, Specular, Attenuation);
+					Lantern = Directional;
+				}
+            }		
+        }
+
+		if (!Sun)
+		{
+			Sun = new DirectionalLight(XMFLOAT3(-2, 5, -2), XMFLOAT4(.3f, .3f, .3f, 1.0f), XMFLOAT4(1.f, 1.f, 1.f, 1.0f), XMFLOAT4(1.f, 1.f, 1.f, 1.0f), XMFLOAT3(0.5f, 0.5f, -0.5f));
+		}
+
+		Lantern = new PointLight(XMFLOAT3(0, 300, 0), XMFLOAT4(0.05f, 0.05f, 0.05f, 1.0f), XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT4(1.0f, .0f, .0f, 1.0f), XMFLOAT3(1.0f, 0.007f, 0.0002f));
+
+    }
+}
+
+void Renderer::ParseAssimpNode(aiNode* Node, const aiScene* Scene, wchar_t* Dir)
+{
+	for (unsigned int i = 0; i < Node->mNumMeshes; ++i)
+	{
+		aiMesh* CurrentMesh = Scene->mMeshes[Node->mMeshes[i]];
+
+		Mesh* NewMesh = new Mesh(CurrentMesh, Node, Scene, std::wstring(Dir));
+
+		NewMesh->InitMesh(D3dDevice, D3dContext);
+		Meshes.push_back(NewMesh);
+	}
+
+    for (unsigned int i = 0; i < Node->mNumChildren; ++i)
+    {
+        ParseAssimpNode(Node->mChildren[i], Scene, Dir);
     }
 }
 
@@ -323,22 +383,9 @@ void Renderer::CreateDevice()
     SceneCamera->SetPosition(XMVectorSet(0.0f, 0.0f, -7.0f, 0.0f));
 
     // load a mesh
-    LoadNewModel(L"Assets/Models/Test/mitsuba.obj");
+    LoadNewModel(L"Assets/Models/Shapes/TestScene.fbx");
 
     // Create the lights
-    Sun = new DirectionalLight();
-    Sun->Position = XMFLOAT3(-2, 5, -2);
-    Sun->Direction = XMFLOAT3(0.25f, 0.5f, -1.0f);
-    Sun->AmbientColor = XMFLOAT4(.25f, .25f, .25f, 1.0f);
-    Sun->DiffuseColor = XMFLOAT4(1.f, 1.f, 1.f, 1.0f);
-
-	PointLight* Light = new PointLight();
-	Light->Position = XMFLOAT3(3, 3, 0);
-	Light->Range = 100;
-	Light->Attenuation = XMFLOAT3(0.0, 0.2, 0.0);
-	Light->AmbientColor = XMFLOAT4(0.05f, 0.05f, 0.05f, 1.0f);
-	Light->DiffuseColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-
     //Lights.push_back(Light);
 
 }
@@ -460,7 +507,7 @@ void Renderer::CreateResources()
     ConstantBufferDescriptor.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     ConstantBufferDescriptor.CPUAccessFlags = 0;
     ConstantBufferDescriptor.MiscFlags = 0;
-    DX::ThrowIfFailed(D3dDevice->CreateBuffer(&ConstantBufferDescriptor, NULL, PerObjectBuffer_VS.GetAddressOf()));
+    DX::ThrowIfFailed(D3dDevice->CreateBuffer(&ConstantBufferDescriptor, nullptr, PerObjectBuffer_VS.GetAddressOf()));
 
 	ZeroMemory(&ConstantBufferDescriptor, sizeof(D3D11_BUFFER_DESC));
 	ConstantBufferDescriptor.Usage = D3D11_USAGE_DEFAULT;
@@ -468,7 +515,7 @@ void Renderer::CreateResources()
 	ConstantBufferDescriptor.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	ConstantBufferDescriptor.CPUAccessFlags = 0;
 	ConstantBufferDescriptor.MiscFlags = 0;
-    DX::ThrowIfFailed(D3dDevice->CreateBuffer(&ConstantBufferDescriptor, NULL, PerFrameBuffer_PS.GetAddressOf()));
+    DX::ThrowIfFailed(D3dDevice->CreateBuffer(&ConstantBufferDescriptor, nullptr, PerFrameBuffer_PS.GetAddressOf()));
 
 	ZeroMemory(&ConstantBufferDescriptor, sizeof(D3D11_BUFFER_DESC));
 	ConstantBufferDescriptor.Usage = D3D11_USAGE_DEFAULT;
@@ -476,7 +523,7 @@ void Renderer::CreateResources()
 	ConstantBufferDescriptor.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	ConstantBufferDescriptor.CPUAccessFlags = 0;
 	ConstantBufferDescriptor.MiscFlags = 0;
-	DX::ThrowIfFailed(D3dDevice->CreateBuffer(&ConstantBufferDescriptor, NULL, PerObjectBuffer_PS.GetAddressOf()));
+	DX::ThrowIfFailed(D3dDevice->CreateBuffer(&ConstantBufferDescriptor, nullptr, PerObjectBuffer_PS.GetAddressOf()));
 
     FontPos.x = backBufferWidth / 2.0f;
     FontPos.y = backBufferHeight / 2.0f;
@@ -530,6 +577,7 @@ void Renderer::OnDeviceLost()
         delete Mesh;
     }
     delete Sun;
+    delete Lantern;
     DepthStencilView.Reset();
     RenderTargetView.Reset();
 	GBufferAlbedo.Reset();

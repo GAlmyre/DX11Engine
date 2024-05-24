@@ -17,7 +17,7 @@ public:
 
 	Mesh(std::vector<VertexType> Vertices, std::vector<DWORD> Indices);
 	// Create and initialize a mesh from assimp gathered data
-	Mesh(aiMesh* AssimpMesh, const aiScene* Scene, const std::wstring& ContainingFolder);
+	Mesh(aiMesh* AssimpMesh, const aiNode* Node, const aiScene* Scene, const std::wstring& ContainingFolder);
 
 	~Mesh();
 

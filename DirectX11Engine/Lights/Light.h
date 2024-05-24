@@ -28,6 +28,8 @@ class Light
 {
 public:
 
+	Light(DirectX::XMFLOAT3 NewPosition, DirectX::XMFLOAT4 NewAmbientColor, DirectX::XMFLOAT4 NewDiffuseColor, DirectX::XMFLOAT4 NewSpecularColor);
+
 	// Position of the light in the world
 	DirectX::XMFLOAT3 Position;
 
@@ -42,10 +44,12 @@ class DirectionalLight : public Light
 {
 public:
 
-	DirectX::XMFLOAT3 Direction;
+	DirectionalLight(DirectX::XMFLOAT3 NewPosition, DirectX::XMFLOAT4 NewAmbientColor,	DirectX::XMFLOAT4 NewDiffuseColor,	DirectX::XMFLOAT4 NewSpecularColor, DirectX::XMFLOAT3 NewDirection);
 
 	// Convert this light to data for use in shaders
 	DirectionalLightData GetLightData();
+
+	DirectX::XMFLOAT3 Direction{};
 };
 
 
@@ -54,9 +58,11 @@ class PointLight : public Light
 {
 public:
 
-	DirectX::XMFLOAT3 Attenuation;
-	float Range;
+	PointLight(DirectX::XMFLOAT3 NewPosition, DirectX::XMFLOAT4 NewAmbientColor, DirectX::XMFLOAT4 NewDiffuseColor, DirectX::XMFLOAT4 NewSpecularColor, DirectX::XMFLOAT3 NewAttenuation);
 
 	// Convert this light to data for use in shaders
 	PointLightData GetLightData();
+
+	DirectX::XMFLOAT3 Attenuation;
+	float Range = 500;
 };

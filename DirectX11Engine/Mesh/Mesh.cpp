@@ -19,8 +19,16 @@ Mesh::Mesh(std::vector<VertexType> Vertices, std::vector<DWORD> Indices)
 	SetWorldMatrix(XMMatrixIdentity());
 }
 
-Mesh::Mesh(aiMesh* AssimpMesh, const aiScene* Scene, const std::wstring& ContainingFolder)
+Mesh::Mesh(aiMesh* AssimpMesh, const aiNode* Node, const aiScene* Scene, const std::wstring& ContainingFolder)
 {
+
+	XMMATRIX NewWorldMatrix = XMMATRIX(	Node->mTransformation.a1, Node->mTransformation.b1, Node->mTransformation.c1, Node->mTransformation.d1,
+										Node->mTransformation.a2, Node->mTransformation.b2, Node->mTransformation.c2, Node->mTransformation.d2,
+										Node->mTransformation.a3, Node->mTransformation.b3, Node->mTransformation.c3, Node->mTransformation.d3,
+										Node->mTransformation.a4, Node->mTransformation.b4, Node->mTransformation.c4, Node->mTransformation.d4);
+
+	SetWorldMatrix(NewWorldMatrix);
+
 	// Add VertPos, TexCoord and Normal for each Vertex 
 	for (int iVert = 0; iVert < AssimpMesh->mNumVertices; ++iVert)
 	{
@@ -65,7 +73,7 @@ Mesh::Mesh(aiMesh* AssimpMesh, const aiScene* Scene, const std::wstring& Contain
 		Mat.DiffuseColor = XMFLOAT3(DiffuseColor.r, DiffuseColor.g, DiffuseColor.b);
 		Mat.AmbientColor = XMFLOAT3(AmbientColor.r, AmbientColor.g, AmbientColor.b);
 		Mat.SpecularColor = XMFLOAT3(SpecularColor.r, SpecularColor.g, SpecularColor.b);
-		Mat.SpecExp = Shininess;
+		Mat.SpecExp = Shininess < 0.0f ? 64 : Shininess;
 
 		if (Scene->mMaterials[AssimpMesh->mMaterialIndex]->GetTextureCount(aiTextureType_DIFFUSE) > 0)
 		{
@@ -77,12 +85,14 @@ Mesh::Mesh(aiMesh* AssimpMesh, const aiScene* Scene, const std::wstring& Contain
 
 			TexturePath = widePath;
 		}
+		else
+		{
+			TexturePath = L"Assets/Textures/rocks.png";
+		}
 
 		SetMaterial(Mat);
 	}
 
-	
-	SetWorldMatrix(XMMatrixIdentity());
 }
 
 Mesh::~Mesh()
@@ -130,7 +140,7 @@ void Mesh::Draw(Microsoft::WRL::ComPtr<ID3D11DeviceContext1> DeviceContext)
 	DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	// Set Texture
-	if (TexturePath != L"")
+	if (!TexturePath.empty())
 	{
 		DeviceContext.Get()->PSSetShaderResources(0, 1, &Texture);
 		DeviceContext.Get()->PSSetSamplers(0, 1, &TextureSamplerState);
