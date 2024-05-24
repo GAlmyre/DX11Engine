@@ -1,7 +1,7 @@
 #include "Shader.h"
 #include <d3dcompiler.h>
 
-Shader::Shader(LPCWSTR Path, EShaderType InShaderType, Microsoft::WRL::ComPtr<ID3D11Device1> Device)
+Shader::Shader(LPCWSTR Path, EShaderType InShaderType, Microsoft::WRL::ComPtr<ID3D11Device> Device)
 {
 	LPCSTR ShaderTypeString;
 	ShaderType = InShaderType;
@@ -20,7 +20,7 @@ Shader::Shader(LPCWSTR Path, EShaderType InShaderType, Microsoft::WRL::ComPtr<ID
 
 	
 	ID3DBlob* ShaderErrorMessage = nullptr;
-	HRESULT hr = D3DCompileFromFile(Path, NULL, NULL, "main", ShaderTypeString, 0, 0, ShaderBuffer.ReleaseAndGetAddressOf(), nullptr);
+	HRESULT hr = D3DCompileFromFile(Path, nullptr, nullptr, "main", ShaderTypeString, 0, 0, ShaderBuffer.ReleaseAndGetAddressOf(), nullptr);
 	if (FAILED(hr))
 	{
 		const char* errorMsg = (const char*)ShaderErrorMessage->GetBufferPointer();
@@ -34,14 +34,14 @@ Shader::Shader(LPCWSTR Path, EShaderType InShaderType, Microsoft::WRL::ComPtr<ID
 	case PixelShader:
 	{
 		Microsoft::WRL::ComPtr<ID3D11PixelShader> spPixelShader;
-		DX::ThrowIfFailed(Device->CreatePixelShader(ShaderBuffer->GetBufferPointer(), ShaderBuffer->GetBufferSize(), NULL, spPixelShader.GetAddressOf()));
+		DX::ThrowIfFailed(Device->CreatePixelShader(ShaderBuffer->GetBufferPointer(), ShaderBuffer->GetBufferSize(), nullptr, spPixelShader.GetAddressOf()));
 		ShaderRef = spPixelShader;
 	}
 		break;
 	case VertexShader:
 	{
 		Microsoft::WRL::ComPtr<ID3D11VertexShader> spVertexShader;
-		DX::ThrowIfFailed(Device->CreateVertexShader(ShaderBuffer->GetBufferPointer(), ShaderBuffer->GetBufferSize(), NULL, spVertexShader.GetAddressOf()));
+		DX::ThrowIfFailed(Device->CreateVertexShader(ShaderBuffer->GetBufferPointer(), ShaderBuffer->GetBufferSize(), nullptr, spVertexShader.GetAddressOf()));
 		ShaderRef = spVertexShader;
 	}
 	break;

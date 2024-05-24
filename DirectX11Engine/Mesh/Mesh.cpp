@@ -97,7 +97,6 @@ Mesh::Mesh(aiMesh* AssimpMesh, const aiNode* Node, const aiScene* Scene, const s
 
 Mesh::~Mesh()
 {
-	InputLayout->Release();
 	VertexBuffer->Release();
 	IndexBuffer->Release();
 	Vertices.clear();
@@ -122,22 +121,18 @@ void Mesh::AddIndex(DWORD NewIndex)
 
 void Mesh::Draw(Microsoft::WRL::ComPtr<ID3D11DeviceContext1> DeviceContext)
 {
-	// Set shaders
-	Microsoft::WRL::ComPtr<ID3D11VertexShader> VSRef = VShader->GetVertexShaderRef();
-	Microsoft::WRL::ComPtr<ID3D11PixelShader> PSRef = PShader->GetPixelShaderRef();
+	//// Set shaders
+	//Microsoft::WRL::ComPtr<ID3D11VertexShader> VSRef = VShader->GetVertexShaderRef();
+	//Microsoft::WRL::ComPtr<ID3D11PixelShader> PSRef = PShader->GetPixelShaderRef();
 
-	DeviceContext->VSSetShader(VSRef.Get(), 0, 0);
-	DeviceContext->PSSetShader(PSRef.Get(), 0, 0);
+	//DeviceContext->VSSetShader(VSRef.Get(), 0, 0);
+	//DeviceContext->PSSetShader(PSRef.Get(), 0, 0);
 
 	// Set Vertex/Index Buffer
 	UINT stride = sizeof(VertexType);
 	UINT offset = 0;
 	DeviceContext->IASetVertexBuffers(0, 1, VertexBuffer.GetAddressOf(), &stride, &offset);
 	DeviceContext->IASetIndexBuffer(IndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
-
-	// Set Input layout
-	DeviceContext->IASetInputLayout(InputLayout.Get());
-	DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	// Set Texture
 	if (!TexturePath.empty())
@@ -166,13 +161,13 @@ void Mesh::UpdateWorldMatrix()
 
 void Mesh::InitMesh(Microsoft::WRL::ComPtr<ID3D11Device1> Device, Microsoft::WRL::ComPtr<ID3D11DeviceContext1> DeviceContext)
 {
-	InitShaders(Device, DeviceContext);
+	//InitShaders(Device, DeviceContext);
 
 	InitTextures(Device);
 
 	InitVertexBuffer(Device, DeviceContext);
 
-	InitInputLayout(Device, DeviceContext);
+	//InitInputLayout(Device, DeviceContext);
 }
 
 void Mesh::InitTextures(Microsoft::WRL::ComPtr<ID3D11Device1>& Device)
@@ -254,7 +249,6 @@ void Mesh::InitVertexBuffer(Microsoft::WRL::ComPtr<ID3D11Device1> Device, Micros
 void Mesh::InitShaders(Microsoft::WRL::ComPtr<ID3D11Device1> Device, Microsoft::WRL::ComPtr<ID3D11DeviceContext1> DeviceContext)
 {
 	// Compile the shaders from file
-	LPCWSTR Path = L"Shaders/SimpleVertexShader.hlsl";
 	VShader = new Shader(L"Shaders/SimpleVertexShader.hlsl", EShaderType::VertexShader, Device);
 	PShader = new Shader(L"Shaders/SimplePixelShader.hlsl", EShaderType::PixelShader, Device);
 }

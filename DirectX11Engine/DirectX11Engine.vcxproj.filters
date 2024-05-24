@@ -124,10 +124,10 @@
     <FxCompile Include="Shaders\SimpleVertexShader.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\PS_GBufferPass.hlsl">
+    <FxCompile Include="Shaders\NormalPixelShader.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\VS_GBufferPass.hlsl">
+    <FxCompile Include="Shaders\UnlitPixelShader.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>

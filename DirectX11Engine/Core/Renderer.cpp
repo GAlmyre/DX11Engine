@@ -13,6 +13,7 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include "assimp/material.h"
+#include "Shaders/Shader.h"
 
 extern void ExitGame() noexcept;
 
@@ -101,6 +102,16 @@ void Renderer::Render()
 	D3dContext->RSSetState(SolidState);
 	D3dContext->OMSetDepthStencilState(DepthStencilState.Get(), 0);
 
+	// Set Input layout
+    D3dContext->IASetInputLayout(InputLayout.Get());
+    D3dContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	// Set shaders
+	Microsoft::WRL::ComPtr<ID3D11VertexShader> VSRef = VertexShader->GetVertexShaderRef();
+	Microsoft::WRL::ComPtr<ID3D11PixelShader> PSRef = CurrentPixelShader->GetPixelShaderRef();
+
+    D3dContext->VSSetShader(VSRef.Get(), 0, 0);
+    D3dContext->PSSetShader(PSRef.Get(), 0, 0);
 
     // LightingPass
 
@@ -385,6 +396,24 @@ void Renderer::CreateDevice()
     // load a mesh
     LoadNewModel(L"Assets/Models/Shapes/TestScene.fbx");
 
+    // Compile the shaders
+	VertexShader = new Shader(L"Shaders/SimpleVertexShader.hlsl", EShaderType::VertexShader, device);
+	PixelShader = new Shader(L"Shaders/SimplePixelShader.hlsl", EShaderType::PixelShader, device);
+    UnlitPixelShader = new Shader(L"Shaders/UnlitPixelShader.hlsl", EShaderType::PixelShader, device);
+    NormalPixelShader = new Shader(L"Shaders/NormalPixelShader.hlsl", EShaderType::PixelShader, device);
+
+    CurrentPixelShader = PixelShader;
+
+	// Create and set the InputLayout
+	D3D11_INPUT_ELEMENT_DESC Layout[] =
+	{
+		{ "POSITION",	0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,	D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "NORMAL",		0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12,	D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD",	0, DXGI_FORMAT_R32G32_FLOAT,	0, 24,	D3D11_INPUT_PER_VERTEX_DATA, 0 },
+	};
+	UINT LayoutNum = ARRAYSIZE(Layout);
+	DX::ThrowIfFailed(device->CreateInputLayout(Layout, LayoutNum, VertexShader->ShaderBuffer->GetBufferPointer(), VertexShader->ShaderBuffer->GetBufferSize(), InputLayout.GetAddressOf()));
+
     // Create the lights
     //Lights.push_back(Light);
 
@@ -398,9 +427,6 @@ void Renderer::CreateResources()
     D3dContext->OMSetRenderTargets(_countof(nullViews), nullViews, nullptr);
     RenderTargetView.Reset();
     DepthStencilView.Reset();
-    GBufferAlbedo.Reset();
-    GBufferNormals.Reset();
-    GBufferPositions.Reset();
 
     D3dContext->Flush();
 
@@ -477,11 +503,6 @@ void Renderer::CreateResources()
 
     // Create a view interface on the rendertarget to use on bind.
     DX::ThrowIfFailed(D3dDevice->CreateRenderTargetView(backBuffer.Get(), nullptr, RenderTargetView.ReleaseAndGetAddressOf()));
-
-    // GBuffer
-    DX::ThrowIfFailed(D3dDevice->CreateRenderTargetView(backBuffer.Get(), nullptr, GBufferAlbedo.ReleaseAndGetAddressOf()));
-    DX::ThrowIfFailed(D3dDevice->CreateRenderTargetView(backBuffer.Get(), nullptr, GBufferPositions.ReleaseAndGetAddressOf()));
-    DX::ThrowIfFailed(D3dDevice->CreateRenderTargetView(backBuffer.Get(), nullptr, GBufferNormals.ReleaseAndGetAddressOf()));
 
     // Allocate a 2-D surface as the depth/stencil buffer and
     // create a DepthStencil view on this surface to use on bind.
@@ -578,11 +599,15 @@ void Renderer::OnDeviceLost()
     }
     delete Sun;
     delete Lantern;
+
+	delete VertexShader;
+	delete PixelShader;
+	delete UnlitPixelShader;
+	delete NormalPixelShader;
+
+    InputLayout->Release();
     DepthStencilView.Reset();
     RenderTargetView.Reset();
-	GBufferAlbedo.Reset();
-	GBufferNormals.Reset();
-	GBufferPositions.Reset();
 
     PerObjectBuffer_VS->Release();
     PerFrameBuffer_PS->Release();

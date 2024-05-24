@@ -11,7 +11,7 @@ enum EShaderType
 class Shader
 {
 public:
-	Shader(LPCWSTR Path, EShaderType ShaderType, Microsoft::WRL::ComPtr<ID3D11Device1> Device);
+	Shader(LPCWSTR Path, EShaderType ShaderType, Microsoft::WRL::ComPtr<ID3D11Device> Device);
 	~Shader();
 
 	Microsoft::WRL::ComPtr<ID3D11VertexShader> GetVertexShaderRef();

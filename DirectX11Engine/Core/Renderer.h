@@ -8,6 +8,8 @@
 #include "Lights/Light.h"
 #include "Mesh/Material.h"
 
+class Shader;
+
 struct ConstantBufferPerFrame_PS
 {
     DirectionalLightData Sun = DirectionalLightData();
@@ -63,6 +65,13 @@ public:
 
     void ParseAssimpNode(aiNode* Node, const aiScene* Scene, wchar_t* Dir);
 
+    Shader* VertexShader = nullptr;
+    Shader* PixelShader = nullptr;
+    Shader* UnlitPixelShader = nullptr;
+    Shader* NormalPixelShader = nullptr;
+
+    Shader* CurrentPixelShader = nullptr;
+
 	// ***  TODO : SCENE CLASS ***
 	std::vector<class Mesh*> Meshes;
 
@@ -99,22 +108,8 @@ private:
     Microsoft::WRL::ComPtr<ID3D11RenderTargetView>  RenderTargetView;
     Microsoft::WRL::ComPtr<ID3D11DepthStencilView>  DepthStencilView;
 
-    // GBuffer
-    Microsoft::WRL::ComPtr<ID3D11RenderTargetView>  GBufferAlbedo;
-    Microsoft::WRL::ComPtr<ID3D11RenderTargetView>  GBufferPositions;
-    Microsoft::WRL::ComPtr<ID3D11RenderTargetView>  GBufferNormals;
-
-    // GBufferShaders 1st pass
-	Microsoft::WRL::ComPtr<ID3D11VertexShader>      GBufferVertexShader;
-	Microsoft::WRL::ComPtr<ID3D11PixelShader>       GBufferPixelShader;
-	Microsoft::WRL::ComPtr<ID3D10Blob>              GBufferVertexShader_Buffer;
-	Microsoft::WRL::ComPtr<ID3D10Blob>              GBufferPixelShader_Buffer;
-
-    // GBufferShaders 2nd pass
-	Microsoft::WRL::ComPtr<ID3D11VertexShader>      LightingVertexShader;
-	Microsoft::WRL::ComPtr<ID3D11PixelShader>       LightingPixelShader;
-	Microsoft::WRL::ComPtr<ID3D10Blob>              LightingVertexShader_Buffer;
-	Microsoft::WRL::ComPtr<ID3D10Blob>              LightingPixelShader_Buffer;
+	// Input layout
+	Microsoft::WRL::ComPtr<ID3D11InputLayout> InputLayout;
 
     // RasterizerStates
     ID3D11RasterizerState* SolidState;

@@ -83,7 +83,7 @@ void GameInputManager::Update()
 	}
 	if (KeyboardState.NumPad1)
 	{
-		Owner->SceneCamera->Speed -= .1;
+		Owner->SceneCamera->Speed -= .05;
 		if (Owner->SceneCamera->Speed <= 0)
 		{
 			Owner->SceneCamera->Speed = .05;
@@ -92,14 +92,39 @@ void GameInputManager::Update()
 	if (KeyboardState.NumPad3)
 	{
 		Owner->SceneCamera->Speed += .1;
-		if (Owner->SceneCamera->Speed >= 10)
+		if (Owner->SceneCamera->Speed >= 20)
 		{
-			Owner->SceneCamera->Speed = 10;
+			Owner->SceneCamera->Speed = 20;
 		}
 	}
-	if (KeyboardState.G)
+	if (KeyboardState.N)
 	{
+		Owner->CurrentPixelShader = Owner->NormalPixelShader;
+	}
+	if (KeyboardState.U)
+	{
+		Owner->CurrentPixelShader = Owner->UnlitPixelShader;
+	}
+	if (KeyboardState.L)
+	{
+		Owner->CurrentPixelShader = Owner->PixelShader;
+	}
 
+	if (KeyboardState.NumPad8)
+	{
+		Owner->Sun->Direction = XMFLOAT3(Owner->Sun->Direction.x, Owner->Sun->Direction.y, Owner->Sun->Direction.z +0.01);
+	}
+	if (KeyboardState.NumPad2)
+	{
+		Owner->Sun->Direction = XMFLOAT3(Owner->Sun->Direction.x, Owner->Sun->Direction.y, Owner->Sun->Direction.z - 0.01);
+	}
+	if (KeyboardState.NumPad4)
+	{
+		Owner->Sun->Direction = XMFLOAT3(Owner->Sun->Direction.x, Owner->Sun->Direction.y + 0.01, Owner->Sun->Direction.z);
+	}
+	if (KeyboardState.NumPad6)
+	{
+		Owner->Sun->Direction = XMFLOAT3(Owner->Sun->Direction.x, Owner->Sun->Direction.y - 0.01, Owner->Sun->Direction.z);
 	}
 }
 
