@@ -15,6 +15,11 @@
 #include "assimp/material.h"
 #include "Shaders/Shader.h"
 
+// GUI
+#include "ImGui/imgui.h"
+#include "ImGui/imgui_impl_win32.h"
+#include "ImGui/imgui_impl_dx11.h"
+
 extern void ExitGame() noexcept;
 
 using namespace DirectX;
@@ -40,6 +45,16 @@ void Renderer::Initialize(HWND window, int width, int height)
     CreateDevice();
 
     CreateResources();
+
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO();
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+	// Setup Platform/Renderer backends
+	ImGui_ImplWin32_Init(window);
+	ImGui_ImplDX11_Init(D3dDevice.Get(), D3dContext.Get());
 
     // TODO: Change the timer settings if you want something other than the default variable timestep mode.
     // e.g. for 60 FPS fixed timestep update logic, call:
@@ -84,6 +99,9 @@ void Renderer::Render()
     {
         return;
     }
+
+    DrawGui();
+
 
     Clear();
 
@@ -148,7 +166,71 @@ void Renderer::Render()
 		Mesh->Draw(D3dContext);
     }
 
+
+	ImGui::Render();
+	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+
     Present();
+}
+
+void Renderer::DrawGui()
+{
+	// Start the Dear ImGui frame
+	ImGui_ImplDX11_NewFrame();
+	ImGui_ImplWin32_NewFrame();
+	ImGui::NewFrame();
+
+	//{
+	//	static float f = 0.0f;
+	//	static int counter = 0;
+
+	//	ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+
+	//	ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
+
+	//	ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
+
+	//	if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+	//		counter++;
+	//	ImGui::SameLine();
+	//	ImGui::Text("counter = %d", counter);
+
+	//	//ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+	//	ImGui::End();
+	//}
+
+    ImGui::Begin("Settings");
+
+    ImGui::SliderFloat("Camera Speed", &SceneCamera->Speed, 0.1f, 50.0f);
+	static float SunDiffuseColor[3] = { Sun->DiffuseColor.x, Sun->DiffuseColor.y, Sun->DiffuseColor.z };
+    static float SunAmbientColor[3] = { Sun->AmbientColor.x, Sun->AmbientColor.y, Sun->AmbientColor.z };
+    static float SunSpecularColor[3] = { Sun->SpecularColor.x, Sun->SpecularColor.y, Sun->SpecularColor.z };
+	static float SunDirection[3] = { Sun->Direction.x, Sun->Direction.y, Sun->Direction.z };
+
+    ImGui::Text("Directional");
+	ImGui::ColorEdit3("Diffuse", SunDiffuseColor);
+    Sun->DiffuseColor = XMFLOAT4(SunDiffuseColor[0], SunDiffuseColor[1], SunDiffuseColor[2], 1.0f);
+
+	ImGui::ColorEdit3("Ambient", SunAmbientColor);
+	Sun->AmbientColor = XMFLOAT4(SunAmbientColor[0], SunAmbientColor[1], SunAmbientColor[2], 1.0f);
+
+	ImGui::ColorEdit3("Specular", SunSpecularColor);
+	Sun->SpecularColor = XMFLOAT4(SunSpecularColor[0], SunSpecularColor[1], SunSpecularColor[2], 1.0f);
+
+	ImGui::SliderFloat3("Direction", SunDirection, -180.0f, 180.0f);
+    Sun->Direction = XMFLOAT3(SunDirection[0], SunDirection[1], SunDirection[2]);
+
+    ImGui::Text("View");
+    if (ImGui::Button("Lit"))
+        CurrentPixelShader = PixelShader;
+    ImGui::SameLine();
+    if (ImGui::Button("Unlit"))
+        CurrentPixelShader = UnlitPixelShader;
+    ImGui::SameLine();
+    if (ImGui::Button("Normal"))
+        CurrentPixelShader = NormalPixelShader;
+        
+    ImGui::End();
 }
 
 // Helper method to clear the back buffers.
@@ -625,6 +707,10 @@ void Renderer::OnDeviceLost()
     D3dDevice.Reset();
     Font.reset();
     Batch.reset();
+
+	ImGui_ImplDX11_Shutdown();
+	ImGui_ImplWin32_Shutdown();
+	ImGui::DestroyContext();
 
     CreateDevice();
 

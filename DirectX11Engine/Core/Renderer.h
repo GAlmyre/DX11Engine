@@ -87,6 +87,8 @@ private:
     void Update(DX::StepTimer const& timer);
     void Render();
 
+    void DrawGui();
+
     void Clear();
     void Present();
 
