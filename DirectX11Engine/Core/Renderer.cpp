@@ -142,11 +142,11 @@ void Renderer::Render()
         PerObjectBuffStruct_VS.World = XMMatrixTranspose(Mesh->GetWorldMatrix());
 
 		PerFrameBuffStruct_PS.Sun = Sun->GetLightData();
-        PerFrameBuffStruct_PS.PointLight = Lantern->GetLightData();
-		/*   for (int i = 0; i < MAX_LIGHTS && i < Lights.size(); ++i)
-		   {
-			   PerFrameBuffStruct_PS.PointLights[i] = Lights[i]->GetLightData();
-		   }*/
+
+		for (int i = 0; i < MAX_LIGHTS && i < Lights.size(); ++i)
+		{
+			   PerFrameBuffStruct_PS.PointLights[i] = Lights[i].Light->GetLightData();
+		}
         PerObjectBuffStruct_PS.Mat = Mesh->Material;
 
 		XMFLOAT3 CamPos{};
@@ -165,7 +165,38 @@ void Renderer::Render()
 		
 		Mesh->Draw(D3dContext);
     }
+    if (bDrawLightEmitters)
+    {
+		// Draw meshes for the lights
+		for (LightAndMesh CurrentLight : Lights)
+		{
+			D3dContext->PSSetShader(UnlitPixelShader->GetPixelShaderRef().Get(), 0, 0);
 
+            CurrentLight.LightMesh->InitMesh(D3dDevice, D3dContext);
+			WorldViewProj = CurrentLight.LightMesh->GetWorldMatrix() * SceneCamera->GetViewMatrix() * SceneCamera->GetProjectionMatrix();
+
+			PerObjectBuffStruct_VS.WorldViewProj = XMMatrixTranspose(WorldViewProj);
+			PerObjectBuffStruct_VS.World = XMMatrixTranspose(CurrentLight.LightMesh->GetWorldMatrix());
+
+			PerFrameBuffStruct_PS.Sun = Sun->GetLightData();
+
+			XMFLOAT3 CamPos{};
+			XMStoreFloat3(&CamPos, SceneCamera->GetPosition());
+			PerFrameBuffStruct_PS.CameraPosition = CamPos;
+			PerFrameBuffStruct_PS.LightsCount = Lights.size();
+
+			D3dContext->UpdateSubresource(PerFrameBuffer_PS.Get(), 0, nullptr, &PerFrameBuffStruct_PS, 0, 0);
+			D3dContext->PSSetConstantBuffers(0, 1, PerFrameBuffer_PS.GetAddressOf());
+
+			D3dContext->UpdateSubresource(PerObjectBuffer_PS.Get(), 0, nullptr, &PerObjectBuffStruct_PS, 0, 0);
+			D3dContext->PSSetConstantBuffers(1, 1, PerObjectBuffer_PS.GetAddressOf());
+
+			D3dContext->UpdateSubresource(PerObjectBuffer_VS.Get(), 0, nullptr, &PerObjectBuffStruct_VS, 0, 0);
+			D3dContext->VSSetConstantBuffers(0, 1, PerObjectBuffer_VS.GetAddressOf());
+
+            CurrentLight.LightMesh->Draw(D3dContext);
+		}
+    }   
 
 	ImGui::Render();
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
@@ -205,20 +236,22 @@ void Renderer::DrawGui()
 	static float SunDiffuseColor[3] = { Sun->DiffuseColor.x, Sun->DiffuseColor.y, Sun->DiffuseColor.z };
     static float SunAmbientColor[3] = { Sun->AmbientColor.x, Sun->AmbientColor.y, Sun->AmbientColor.z };
     static float SunSpecularColor[3] = { Sun->SpecularColor.x, Sun->SpecularColor.y, Sun->SpecularColor.z };
-	static float SunDirection[3] = { Sun->Direction.x, Sun->Direction.y, Sun->Direction.z };
+    static float SunDirection[3] = { Sun->Direction.x, Sun->Direction.y, Sun->Direction.z };
 
-    ImGui::Text("Directional");
-	ImGui::ColorEdit3("Diffuse", SunDiffuseColor);
-    Sun->DiffuseColor = XMFLOAT4(SunDiffuseColor[0], SunDiffuseColor[1], SunDiffuseColor[2], 1.0f);
+    if (ImGui::CollapsingHeader("Directional"))
+    {
+		ImGui::ColorEdit3("Diffuse", SunDiffuseColor);
+		Sun->DiffuseColor = XMFLOAT4(SunDiffuseColor[0], SunDiffuseColor[1], SunDiffuseColor[2], 1.0f);
 
-	ImGui::ColorEdit3("Ambient", SunAmbientColor);
-	Sun->AmbientColor = XMFLOAT4(SunAmbientColor[0], SunAmbientColor[1], SunAmbientColor[2], 1.0f);
+		ImGui::ColorEdit3("Ambient", SunAmbientColor);
+		Sun->AmbientColor = XMFLOAT4(SunAmbientColor[0], SunAmbientColor[1], SunAmbientColor[2], 1.0f);
 
-	ImGui::ColorEdit3("Specular", SunSpecularColor);
-	Sun->SpecularColor = XMFLOAT4(SunSpecularColor[0], SunSpecularColor[1], SunSpecularColor[2], 1.0f);
+		ImGui::ColorEdit3("Specular", SunSpecularColor);
+		Sun->SpecularColor = XMFLOAT4(SunSpecularColor[0], SunSpecularColor[1], SunSpecularColor[2], 1.0f);
 
-	ImGui::SliderFloat3("Direction", SunDirection, -180.0f, 180.0f);
-    Sun->Direction = XMFLOAT3(SunDirection[0], SunDirection[1], SunDirection[2]);
+		ImGui::SliderXMFLOAT3("Direction", SunDirection, -1.0f, 1.0f);
+		Sun->Direction = XMFLOAT3(SunDirection[0], SunDirection[1], SunDirection[2]);
+    }
 
     ImGui::Text("View");
     if (ImGui::Button("Lit"))
@@ -229,7 +262,12 @@ void Renderer::DrawGui()
     ImGui::SameLine();
     if (ImGui::Button("Normal"))
         CurrentPixelShader = NormalPixelShader;
+
+	if (ImGui::Button("Toggle Light Emitters"))
+		bDrawLightEmitters = !bDrawLightEmitters;
         
+    ImGui::Text("FrameTime %.3f ms/frame (%.1f FPS)", FrameTime, 1000.0 / FrameTime);
+
     ImGui::End();
 }
 
@@ -312,7 +350,7 @@ void Renderer::GetDefaultSize(int& width, int& height) const noexcept
 
 void Renderer::LoadNewModel(std::wstring Path)
 {
-    SceneCamera->SetPosition(XMVectorSet(0.0f, 0.0f, -7.0f, 0.0f));
+    SceneCamera->SetPosition(XMVectorSet(0.0f, 5.0f, -7.0f, 0.0f));
 
     // load a mesh  
     wchar_t Dir[_MAX_DIR];
@@ -325,7 +363,6 @@ void Renderer::LoadNewModel(std::wstring Path)
 
 	const aiScene* Scene = Importer.ReadFile(DX::WStringToString(Path), aiProcess_CalcTangentSpace |
 		aiProcess_Triangulate |
-        //aiProcess_MakeLeftHanded |
         aiProcess_FlipUVs |
 		aiProcess_JoinIdenticalVertices |
 		aiProcess_SortByPType);
@@ -341,9 +378,7 @@ void Renderer::LoadNewModel(std::wstring Path)
             delete Sun;
             Sun = nullptr;
         }
-            
-        if (Lantern)
-            delete Lantern;
+        Lights.clear();
 
         // Extract the lights
         for (unsigned int i = 0; i < Scene->mNumLights; ++i)
@@ -355,7 +390,7 @@ void Renderer::LoadNewModel(std::wstring Path)
 				XMFLOAT3 Position = XMFLOAT3(CurrentLight->mPosition.x, CurrentLight->mPosition.y, CurrentLight->mPosition.z);
 				XMFLOAT4 Ambient = XMFLOAT4(CurrentLight->mColorAmbient.r, CurrentLight->mColorAmbient.g, CurrentLight->mColorAmbient.b, 1.0f);
 				XMFLOAT4 Diffuse = XMFLOAT4(CurrentLight->mColorDiffuse.r, CurrentLight->mColorDiffuse.g, CurrentLight->mColorDiffuse.b, 1.0f);
-				XMFLOAT4 Specular = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);// XMFLOAT4(CurrentLight->mColorSpecular.r, CurrentLight->mColorSpecular.g, CurrentLight->mColorSpecular.b, 1.0f);
+				XMFLOAT4 Specular = XMFLOAT4(CurrentLight->mColorSpecular.r, CurrentLight->mColorSpecular.g, CurrentLight->mColorSpecular.b, 1.0f);
 
 				if (CurrentLight->mType == aiLightSource_DIRECTIONAL)
 				{
@@ -365,7 +400,7 @@ void Renderer::LoadNewModel(std::wstring Path)
                     // We add some ambient as we do not have GI for now
                     if (Directional->AmbientColor.x == 0.0f && Directional->AmbientColor.y == 0.0f && Directional->AmbientColor.z == 0.0f);
                     {
-                        Directional->AmbientColor = XMFLOAT4(.2f, .2f, .2f, 1.0f);
+                        Directional->AmbientColor = XMFLOAT4(.1f, .1f, .1f, 1.0f);
                     }
 
 					Sun = Directional;
@@ -373,21 +408,36 @@ void Renderer::LoadNewModel(std::wstring Path)
 
 				if (CurrentLight->mType == aiLightSource_POINT)
 				{
-					XMFLOAT3 Attenuation = XMFLOAT3(CurrentLight->mAttenuationConstant, CurrentLight->mAttenuationLinear, CurrentLight->mAttenuationQuadratic);
+					//XMFLOAT3 Attenuation = XMFLOAT3(CurrentLight->mAttenuationConstant, CurrentLight->mAttenuationLinear, CurrentLight->mAttenuationQuadratic);
 
-					PointLight* Directional = new PointLight(Position, Ambient, Diffuse, Specular, Attenuation);
-					Lantern = Directional;
+					//PointLight* Point = new PointLight(Position, Ambient, Diffuse, Specular, Attenuation);
+					//Lights.push_back(Point);
 				}
             }		
         }
 
 		if (!Sun)
 		{
-			Sun = new DirectionalLight(XMFLOAT3(-2, 5, -2), XMFLOAT4(.2f, .2f, .2f, 1.0f), XMFLOAT4(1.f, 1.f, 1.f, 1.0f), XMFLOAT4(1.f, 1.f, 1.f, 1.0f), XMFLOAT3(0.5f, 0.5f, -0.5f));
+			Sun = new DirectionalLight(XMFLOAT3(0.8, -0.1, -0.6), XMFLOAT4(.1f, .1f, .1f, 1.0f), XMFLOAT4(1.f, 1.f, 1.f, 1.0f), XMFLOAT4(1.f, 1.f, 1.f, 1.0f), XMFLOAT3(0.8, -0.1, -0.6));
 		}
 
-		Lantern = new PointLight(XMFLOAT3(0, 300, 0), XMFLOAT4(0.05f, 0.05f, 0.05f, 1.0f), XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT4(1.0f, .0f, .0f, 1.0f), XMFLOAT3(1.0f, 0.007f, 0.0002f));
+        AddPointLight(XMFLOAT3(-100.0, 100.0, 0.0), XMFLOAT4(1.f, 0.f, 0.f, 1.0f), XMFLOAT4(1.f, 0.f, 0.f, 1.0f));
+
+        AddPointLight(XMFLOAT3(300.0, 100.0, 0.0), XMFLOAT4(0.f, 0.f, 1.f, 1.0f), XMFLOAT4(0.f, 0.f, 1.f, 1.0f));		
+
     }
+}
+
+void Renderer::AddPointLight(XMFLOAT3 Position, XMFLOAT4 DiffuseColor, XMFLOAT4 SpecularColor)
+{
+    LightAndMesh NewLightStruct;
+	PointLight* NewLight = new PointLight(Position, XMFLOAT4(0.f, 0.f, 0.f, 1.0f), DiffuseColor, SpecularColor, XMFLOAT3(1.0, 0.0014, 0.000007));
+    Mesh* LightMesh = new Cube(NewLight->Position, XMFLOAT3(0.0f, 0.0f, 0.0f), XMFLOAT3(5.0f, 5.0f, 5.0f));
+
+    NewLightStruct.Light = NewLight;
+    NewLightStruct.LightMesh = LightMesh;
+
+	Lights.push_back(NewLightStruct);
 }
 
 void Renderer::ParseAssimpNode(aiNode* Node, const aiScene* Scene, wchar_t* Dir)
@@ -686,7 +736,7 @@ void Renderer::OnDeviceLost()
         delete Mesh;
     }
     delete Sun;
-    delete Lantern;
+    Lights.clear();
 
 	delete VertexShader;
 	delete PixelShader;

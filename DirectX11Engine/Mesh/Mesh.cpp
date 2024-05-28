@@ -15,7 +15,7 @@ Mesh::Mesh(std::vector<VertexType> Vertices, std::vector<DWORD> Indices)
 {
 	this->Vertices = Vertices;
 	this->Indices = Indices;
-	TexturePath = L"Assets/Textures/container.png";
+	TexturePath = L"Assets/Textures/DefaultTexture.png";
 	SetWorldMatrix(XMMatrixIdentity());
 }
 
@@ -65,16 +65,17 @@ Mesh::Mesh(aiMesh* AssimpMesh, const aiNode* Node, const aiScene* Scene, const s
 		aiColor3D SpecularColor;
 		float Shininess;
 
-		Scene->mMaterials[AssimpMesh->mMaterialIndex]->Get(AI_MATKEY_COLOR_DIFFUSE, DiffuseColor);
-		Scene->mMaterials[AssimpMesh->mMaterialIndex]->Get(AI_MATKEY_COLOR_AMBIENT, AmbientColor);
-		Scene->mMaterials[AssimpMesh->mMaterialIndex]->Get(AI_MATKEY_COLOR_SPECULAR, SpecularColor);
-		Scene->mMaterials[AssimpMesh->mMaterialIndex]->Get(AI_MATKEY_SHININESS, Shininess);
+		aiReturn Res;
+		Res = Scene->mMaterials[AssimpMesh->mMaterialIndex]->Get(AI_MATKEY_COLOR_DIFFUSE, DiffuseColor);
+		Res = Scene->mMaterials[AssimpMesh->mMaterialIndex]->Get(AI_MATKEY_COLOR_AMBIENT, AmbientColor);
+		Res = Scene->mMaterials[AssimpMesh->mMaterialIndex]->Get(AI_MATKEY_COLOR_SPECULAR, SpecularColor);
+		Res = Scene->mMaterials[AssimpMesh->mMaterialIndex]->Get(AI_MATKEY_SHININESS, Shininess);
 
 		Mat.DiffuseColor = XMFLOAT3(DiffuseColor.r, DiffuseColor.g, DiffuseColor.b);
 		Mat.AmbientColor = XMFLOAT3(AmbientColor.r, AmbientColor.g, AmbientColor.b);
 		Mat.SpecularColor = XMFLOAT3(SpecularColor.r, SpecularColor.g, SpecularColor.b);
 
-		Mat.SpecExp = Shininess < 0.0f ? 64 : Shininess;
+		Mat.SpecExp = Shininess <= 0.0f ? 64 : Shininess;
 
 		if (Scene->mMaterials[AssimpMesh->mMaterialIndex]->GetTextureCount(aiTextureType_DIFFUSE) > 0)
 		{
@@ -103,7 +104,7 @@ Mesh::~Mesh()
 	Vertices.clear();
 }
 
-void Mesh::AddVertex(DirectX::XMFLOAT3 Vertex, DirectX::XMFLOAT2 TextureCoord, DirectX::XMFLOAT3 Normal)
+void Mesh::AddVertex(XMFLOAT3 Vertex, DirectX::XMFLOAT2 TextureCoord, XMFLOAT3 Normal)
 {
 	VertexType NewVertex;
 	NewVertex.position = Vertex;
@@ -140,15 +141,6 @@ void Mesh::Draw(Microsoft::WRL::ComPtr<ID3D11DeviceContext1> DeviceContext)
 void Mesh::SetMaterial(MaterialData MatData)
 {
 	Material = MatData;
-}
-
-void Mesh::UpdateWorldMatrix()
-{
-	XMMATRIX TranslationMatrix = XMMatrixTranslation(Position.x, Position.y, Position.z);
-	XMMATRIX RotationMatrix = XMMatrixRotationRollPitchYaw(Rotation.x, Rotation.y, Rotation.z);
-	XMMATRIX ScaleMatrix = XMMatrixScaling(Scale.x, Scale.y, Scale.z);
-
-	WorldMatrix = ScaleMatrix * RotationMatrix * TranslationMatrix;
 }
 
 void Mesh::InitMesh(Microsoft::WRL::ComPtr<ID3D11Device1> Device, Microsoft::WRL::ComPtr<ID3D11DeviceContext1> DeviceContext)

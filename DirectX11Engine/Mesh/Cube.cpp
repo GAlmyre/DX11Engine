@@ -7,7 +7,7 @@ Cube::Cube()
 	:Mesh()
 {
 	SetVerticesAndIndices();
-	TexturePath = L"Assets/Textures/container.png";
+	TexturePath = L"Assets/Textures/DefaultTexture.png";
 }
 
 Cube::Cube(XMFLOAT3 Position, XMFLOAT3 Rotation, XMFLOAT3 Scale)
@@ -19,7 +19,7 @@ Cube::Cube(XMFLOAT3 Position, XMFLOAT3 Rotation, XMFLOAT3 Scale)
 	this->Scale = Scale;
 
 	UpdateWorldMatrix();
-	TexturePath = L"Assets/Textures/container.png";
+	TexturePath = L"Assets/Textures/DefaultTexture.png";
 }
 
 void Cube::SetVerticesAndIndices()

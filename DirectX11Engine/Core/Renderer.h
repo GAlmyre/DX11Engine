@@ -9,11 +9,12 @@
 #include "Mesh/Material.h"
 
 class Shader;
+class Mesh;
 
 struct ConstantBufferPerFrame_PS
 {
     DirectionalLightData Sun = DirectionalLightData();
-    PointLightData PointLight = PointLightData();
+    PointLightData PointLights[MAX_LIGHTS];
     DirectX::XMFLOAT3 CameraPosition = DirectX::XMFLOAT3();
     float LightsCount = 0;
    
@@ -28,6 +29,12 @@ struct ConstantBufferPerObject_VS
 {
     DirectX::XMMATRIX WorldViewProj;
     DirectX::XMMATRIX World;
+};
+
+struct LightAndMesh
+{
+    PointLight* Light = nullptr;
+    Mesh* LightMesh = nullptr;
 };
 
 // A basic game implementation that creates a D3D11 device and
@@ -63,6 +70,8 @@ public:
 
     void LoadNewModel(std::wstring Path);
 
+    void AddPointLight(DirectX::XMFLOAT3 Position, DirectX::XMFLOAT4 DiffuseColor, DirectX::XMFLOAT4 SpecularColor);
+
     void ParseAssimpNode(aiNode* Node, const aiScene* Scene, wchar_t* Dir);
 
     Shader* VertexShader = nullptr;
@@ -73,14 +82,15 @@ public:
     Shader* CurrentPixelShader = nullptr;
 
 	// ***  TODO : SCENE CLASS ***
-	std::vector<class Mesh*> Meshes;
+	std::vector<Mesh*> Meshes;
 
     // A scene can contain one directional light and MAX_LIGHTS PointLights
 	DirectionalLight* Sun = nullptr;
-    PointLight* Lantern = nullptr;
-    std::vector<PointLight*> Lights;
+    std::vector<LightAndMesh> Lights;
 	class Camera* SceneCamera = nullptr;
 	// ***  SCENE CLASS ***
+
+    bool bDrawLightEmitters = false;
 
 private:
 

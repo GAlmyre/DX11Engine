@@ -2,6 +2,8 @@
 // The base class for a mesh
 #include <vector>
 #include "Material.h"
+#include "Core/Actor.h"
+#include "Core/pch.h"
 
 using namespace DirectX::SimpleMath;
 
@@ -9,7 +11,7 @@ using VertexType = DirectX::VertexPositionNormalTexture;
 
 class Shader;
 
-class Mesh
+class Mesh : public Actor
 {
 public:
 
@@ -41,35 +43,7 @@ public:
 
 	void AddIndex(DWORD NewIndex);
 
-	// World Matrix
-	DirectX::XMMATRIX GetWorldMatrix() const { return WorldMatrix; }
-	void SetWorldMatrix(DirectX::XMMATRIX val) { WorldMatrix = val; }
-
-	// Transform setters and Getters
-	DirectX::XMFLOAT3 GetPosition() const { return Position; }
-	void SetPosition(DirectX::XMFLOAT3 val) 
-	{ 
-		Position = val;
-		UpdateWorldMatrix();
-	}
-
-	DirectX::XMFLOAT3 GetRotation() const { return Rotation; }
-	void SetRotation(DirectX::XMFLOAT3 val) 
-	{
-		Rotation = val;
-		UpdateWorldMatrix();
-	}
-
-	DirectX::XMFLOAT3 GetScale() const { return Scale; }
-	void SetScale(DirectX::XMFLOAT3 val) 
-	{
-		Scale = val;
-		UpdateWorldMatrix();
-	}
-
 	void SetMaterial(MaterialData MatData);
-
-	void UpdateWorldMatrix();
 
 	// Initialise shaders and buffers for this mesh
 	void InitMesh(Microsoft::WRL::ComPtr<ID3D11Device1> Device, Microsoft::WRL::ComPtr<ID3D11DeviceContext1> DeviceContext);
@@ -80,13 +54,5 @@ public:
 
 	// Render the mesh
 	void Draw(Microsoft::WRL::ComPtr<ID3D11DeviceContext1> DeviceContext);
-
-protected:
-	DirectX::XMMATRIX WorldMatrix;
-
-	// Mesh Transform
-	DirectX::XMFLOAT3 Position = { 0,0,0 };
-	DirectX::XMFLOAT3 Rotation = { 0,0,0 };
-	DirectX::XMFLOAT3 Scale = { 1,1,1 };
 };
 
