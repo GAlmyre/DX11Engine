@@ -6,27 +6,27 @@ class Actor
 public:
 	// World Matrix
 	DirectX::XMMATRIX GetWorldMatrix() const { return WorldMatrix; }
-	void SetWorldMatrix(DirectX::XMMATRIX val) { WorldMatrix = val; }
+	void SetWorldMatrix(DirectX::XMMATRIX Val) { WorldMatrix = Val; }
 
 	// Transform setters and Getters
 	DirectX::XMFLOAT3 GetPosition() const { return Position; }
-	void SetPosition(DirectX::XMFLOAT3 val)
+	void SetPosition(DirectX::XMFLOAT3 Val)
 	{
-		Position = val;
+		Position = Val;
 		UpdateWorldMatrix();
 	}
 
 	DirectX::XMFLOAT3 GetRotation() const { return Rotation; }
-	void SetRotation(DirectX::XMFLOAT3 val)
+	void SetRotation(DirectX::XMFLOAT3 Val)
 	{
-		Rotation = val;
+		Rotation = Val;
 		UpdateWorldMatrix();
 	}
 
 	DirectX::XMFLOAT3 GetScale() const { return Scale; }
-	void SetScale(DirectX::XMFLOAT3 val)
+	void SetScale(DirectX::XMFLOAT3 Val)
 	{
-		Scale = val;
+		Scale = Val;
 		UpdateWorldMatrix();
 	}
 

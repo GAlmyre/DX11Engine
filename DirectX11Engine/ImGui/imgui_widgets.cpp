@@ -2270,7 +2270,7 @@ TYPE ImGui::RoundScalarWithFormatT(const char* format, ImGuiDataType data_type, 
 // - DragScalarN()
 // - DragFloat()
 // - DragFloat2()
-// - DragXMFLOAT3()
+// - DragFloat3()
 // - DragFloat4()
 // - DragFloatRange2()
 // - DragInt()
@@ -2571,7 +2571,7 @@ bool ImGui::DragFloat2(const char* label, float v[2], float v_speed, float v_min
     return DragScalarN(label, ImGuiDataType_Float, v, 2, v_speed, &v_min, &v_max, format, flags);
 }
 
-bool ImGui::DragXMFLOAT3(const char* label, float v[3], float v_speed, float v_min, float v_max, const char* format, ImGuiSliderFlags flags)
+bool ImGui::DragFloat3(const char* label, float v[3], float v_speed, float v_min, float v_max, const char* format, ImGuiSliderFlags flags)
 {
     return DragScalarN(label, ImGuiDataType_Float, v, 3, v_speed, &v_min, &v_max, format, flags);
 }
@@ -2679,7 +2679,7 @@ bool ImGui::DragIntRange2(const char* label, int* v_current_min, int* v_current_
 // - SliderScalarN()
 // - SliderFloat()
 // - SliderFloat2()
-// - SliderXMFLOAT3()
+// - SliderFloat3()
 // - SliderFloat4()
 // - SliderAngle()
 // - SliderInt()
@@ -3158,7 +3158,7 @@ bool ImGui::SliderFloat2(const char* label, float v[2], float v_min, float v_max
     return SliderScalarN(label, ImGuiDataType_Float, v, 2, &v_min, &v_max, format, flags);
 }
 
-bool ImGui::SliderXMFLOAT3(const char* label, float v[3], float v_min, float v_max, const char* format, ImGuiSliderFlags flags)
+bool ImGui::SliderFloat3(const char* label, float v[3], float v_min, float v_max, const char* format, ImGuiSliderFlags flags)
 {
     return SliderScalarN(label, ImGuiDataType_Float, v, 3, &v_min, &v_max, format, flags);
 }
@@ -3282,7 +3282,7 @@ bool ImGui::VSliderInt(const char* label, const ImVec2& size, int* v, int v_min,
 // - InputScalarN()
 // - InputFloat()
 // - InputFloat2()
-// - InputXMFLOAT3()
+// - InputFloat3()
 // - InputFloat4()
 // - InputInt()
 // - InputInt2()
@@ -3599,7 +3599,7 @@ bool ImGui::InputFloat2(const char* label, float v[2], const char* format, ImGui
     return InputScalarN(label, ImGuiDataType_Float, v, 2, NULL, NULL, format, flags);
 }
 
-bool ImGui::InputXMFLOAT3(const char* label, float v[3], const char* format, ImGuiInputTextFlags flags)
+bool ImGui::InputFloat3(const char* label, float v[3], const char* format, ImGuiInputTextFlags flags)
 {
     return InputScalarN(label, ImGuiDataType_Float, v, 3, NULL, NULL, format, flags);
 }

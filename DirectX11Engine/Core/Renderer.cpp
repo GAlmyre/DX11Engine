@@ -211,25 +211,6 @@ void Renderer::DrawGui()
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
 
-	//{
-	//	static float f = 0.0f;
-	//	static int counter = 0;
-
-	//	ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
-
-	//	ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-
-	//	ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-
-	//	if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-	//		counter++;
-	//	ImGui::SameLine();
-	//	ImGui::Text("counter = %d", counter);
-
-	//	//ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
-	//	ImGui::End();
-	//}
-
     ImGui::Begin("Settings");
 
     ImGui::SliderFloat("Camera Speed", &SceneCamera->Speed, 0.1f, 50.0f);
@@ -249,7 +230,7 @@ void Renderer::DrawGui()
 		ImGui::ColorEdit3("Specular", SunSpecularColor);
 		Sun->SpecularColor = XMFLOAT4(SunSpecularColor[0], SunSpecularColor[1], SunSpecularColor[2], 1.0f);
 
-		ImGui::SliderXMFLOAT3("Direction", SunDirection, -1.0f, 1.0f);
+		ImGui::SliderFloat3("Direction", SunDirection, -1.0f, 1.0f);
 		Sun->Direction = XMFLOAT3(SunDirection[0], SunDirection[1], SunDirection[2]);
     }
 
