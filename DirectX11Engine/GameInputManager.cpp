@@ -1,6 +1,7 @@
 #include "Core/pch.h"
 #include "Core/Renderer.h"
 #include "Camera.h"
+#include "Mesh/Mesh.h"
 
 #include "GameInputManager.h"
 
@@ -112,19 +113,23 @@ void GameInputManager::Update()
 
 	if (KeyboardState.NumPad8)
 	{
-		Owner->Sun->Direction = XMFLOAT3(Owner->Sun->Direction.x, Owner->Sun->Direction.y, Owner->Sun->Direction.z +0.01);
+		Owner->Sun->SetRotation(XMFLOAT3(Owner->Sun->GetRotation().x, Owner->Sun->GetRotation().y, Owner->Sun->GetRotation().z + 0.01));
 	}
 	if (KeyboardState.NumPad2)
 	{
-		Owner->Sun->Direction = XMFLOAT3(Owner->Sun->Direction.x, Owner->Sun->Direction.y, Owner->Sun->Direction.z - 0.01);
+		Owner->Sun->SetRotation(XMFLOAT3(Owner->Sun->GetRotation().x, Owner->Sun->GetRotation().y, Owner->Sun->GetRotation().z - 0.01));
 	}
 	if (KeyboardState.NumPad4)
 	{
-		Owner->Sun->Direction = XMFLOAT3(Owner->Sun->Direction.x, Owner->Sun->Direction.y + 0.01, Owner->Sun->Direction.z);
+		Owner->Sun->SetRotation(XMFLOAT3(Owner->Sun->GetRotation().x, Owner->Sun->GetRotation().y + 0.01, Owner->Sun->GetRotation().z));
 	}
 	if (KeyboardState.NumPad6)
 	{
-		Owner->Sun->Direction = XMFLOAT3(Owner->Sun->Direction.x, Owner->Sun->Direction.y - 0.01, Owner->Sun->Direction.z);
+		Owner->Sun->SetRotation(XMFLOAT3(Owner->Sun->GetRotation().x, Owner->Sun->GetRotation().y - 0.01, Owner->Sun->GetRotation().z));
+	}
+	if (KeyboardState.NumPad7)
+	{
+		Owner->Meshes[0]->SetRotation(XMFLOAT3(Owner->Meshes[0]->GetRotation().x, Owner->Meshes[0]->GetRotation().y + 0.0001, Owner->Meshes[0]->GetRotation().z));
 	}
 }
 

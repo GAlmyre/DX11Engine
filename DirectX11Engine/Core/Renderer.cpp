@@ -19,6 +19,7 @@
 #include "ImGui/imgui.h"
 #include "ImGui/imgui_impl_win32.h"
 #include "ImGui/imgui_impl_dx11.h"
+#include "Math.h"
 
 extern void ExitGame() noexcept;
 
@@ -217,7 +218,7 @@ void Renderer::DrawGui()
 	static float SunDiffuseColor[3] = { Sun->DiffuseColor.x, Sun->DiffuseColor.y, Sun->DiffuseColor.z };
     static float SunAmbientColor[3] = { Sun->AmbientColor.x, Sun->AmbientColor.y, Sun->AmbientColor.z };
     static float SunSpecularColor[3] = { Sun->SpecularColor.x, Sun->SpecularColor.y, Sun->SpecularColor.z };
-    static float SunDirection[3] = { Sun->Direction.x, Sun->Direction.y, Sun->Direction.z };
+    static float SunDirection[3] = { Sun->GetRotation().x, Sun->GetRotation().y, Sun->GetRotation().z };
 
     if (ImGui::CollapsingHeader("Directional"))
     {
@@ -230,9 +231,25 @@ void Renderer::DrawGui()
 		ImGui::ColorEdit3("Specular", SunSpecularColor);
 		Sun->SpecularColor = XMFLOAT4(SunSpecularColor[0], SunSpecularColor[1], SunSpecularColor[2], 1.0f);
 
-		ImGui::SliderFloat3("Direction", SunDirection, -1.0f, 1.0f);
-		Sun->Direction = XMFLOAT3(SunDirection[0], SunDirection[1], SunDirection[2]);
+		ImGui::SliderFloat3("Direction", SunDirection, -PI, PI);
+		Sun->SetRotation(XMFLOAT3(SunDirection[0], SunDirection[1], SunDirection[2]));
     }
+
+  //  for (Mesh* CurrentMesh : Meshes)
+  //  {
+  //      {
+		//static float Rotation[3] = { CurrentMesh->GetRotation().x, CurrentMesh->GetRotation().y, CurrentMesh->GetRotation().z };
+
+		//ImGui::Text("Rotation : %f, %f, %f", CurrentMesh->GetRotation().x, CurrentMesh->GetRotation().y, CurrentMesh->GetRotation().z);
+		//ImGui::SliderFloat3("Rotation", Rotation, -3.14f, 3.14f);
+		//CurrentMesh->SetRotation(XMFLOAT3(Rotation[0], Rotation[1], Rotation[2]));
+
+		//static float Position[3] = { CurrentMesh->GetPosition().x, CurrentMesh->GetPosition().y, CurrentMesh->GetPosition().z };
+
+		//ImGui::SliderFloat3("Position", Position, -180.0f, 180.0f);
+		//CurrentMesh->SetPosition(XMFLOAT3(Position[0], Position[1], Position[2]));
+  //      }
+  //  }
 
     ImGui::Text("View");
     if (ImGui::Button("Lit"))
@@ -413,7 +430,7 @@ void Renderer::AddPointLight(XMFLOAT3 Position, XMFLOAT4 DiffuseColor, XMFLOAT4 
 {
     LightAndMesh NewLightStruct;
 	PointLight* NewLight = new PointLight(Position, XMFLOAT4(0.f, 0.f, 0.f, 1.0f), DiffuseColor, SpecularColor, XMFLOAT3(1.0, 0.0014, 0.000007));
-    Mesh* LightMesh = new Cube(NewLight->Position, XMFLOAT3(0.0f, 0.0f, 0.0f), XMFLOAT3(5.0f, 5.0f, 5.0f));
+    Mesh* LightMesh = new Cube(NewLight->GetPosition(), XMFLOAT3(0.0f, 0.0f, 0.0f), XMFLOAT3(5.0f, 5.0f, 5.0f));
 
     NewLightStruct.Light = NewLight;
     NewLightStruct.LightMesh = LightMesh;

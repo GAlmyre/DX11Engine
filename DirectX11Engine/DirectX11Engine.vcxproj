@@ -166,6 +166,7 @@
   <ItemGroup>
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Core\Actor.h" />
+    <ClInclude Include="Core\Math.h" />
     <ClInclude Include="Core\pch.h" />
     <ClInclude Include="Core\Renderer.h" />
     <ClInclude Include="ImGui\imconfig.h" />
@@ -189,6 +190,7 @@
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Core\Actor.cpp" />
     <ClCompile Include="Core\Main.cpp" />
+    <ClCompile Include="Core\Math.cpp" />
     <ClCompile Include="Core\pch.cpp" />
     <ClCompile Include="Core\Renderer.cpp" />
     <ClCompile Include="ImGui\imgui.cpp" />

@@ -89,6 +89,9 @@
     <ClInclude Include="Core\Actor.h">
       <Filter>Core</Filter>
     </ClInclude>
+    <ClInclude Include="Core\Math.h">
+      <Filter>Core</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp">
@@ -143,6 +146,9 @@
       <Filter>ImGui</Filter>
     </ClCompile>
     <ClCompile Include="Core\Actor.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Math.cpp">
       <Filter>Core</Filter>
     </ClCompile>
   </ItemGroup>
