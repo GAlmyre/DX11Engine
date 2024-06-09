@@ -231,25 +231,21 @@ void Renderer::DrawGui()
 		ImGui::ColorEdit3("Specular", SunSpecularColor);
 		Sun->SpecularColor = XMFLOAT4(SunSpecularColor[0], SunSpecularColor[1], SunSpecularColor[2], 1.0f);
 
-		ImGui::SliderFloat3("Direction", SunDirection, -PI, PI);
+		ImGui::SliderFloat3("Direction", SunDirection, -180.0f, 180.0f);
 		Sun->SetRotation(XMFLOAT3(SunDirection[0], SunDirection[1], SunDirection[2]));
     }
 
-  //  for (Mesh* CurrentMesh : Meshes)
-  //  {
-  //      {
-		//static float Rotation[3] = { CurrentMesh->GetRotation().x, CurrentMesh->GetRotation().y, CurrentMesh->GetRotation().z };
+	Mesh* CurrentMesh = Meshes[0];
+	static float Rotation[3] = { CurrentMesh->GetRotation().x, CurrentMesh->GetRotation().y, CurrentMesh->GetRotation().z };
 
-		//ImGui::Text("Rotation : %f, %f, %f", CurrentMesh->GetRotation().x, CurrentMesh->GetRotation().y, CurrentMesh->GetRotation().z);
-		//ImGui::SliderFloat3("Rotation", Rotation, -3.14f, 3.14f);
-		//CurrentMesh->SetRotation(XMFLOAT3(Rotation[0], Rotation[1], Rotation[2]));
+	ImGui::Text("Rotation : %f, %f, %f", CurrentMesh->GetRotation().x, CurrentMesh->GetRotation().y, CurrentMesh->GetRotation().z);
+	ImGui::SliderFloat3("Rotation", Rotation, -180.0f, 180.0f);
+	CurrentMesh->SetRotation(XMFLOAT3(Rotation[0], Rotation[1], Rotation[2]));
 
-		//static float Position[3] = { CurrentMesh->GetPosition().x, CurrentMesh->GetPosition().y, CurrentMesh->GetPosition().z };
+	static float Position[3] = { CurrentMesh->GetPosition().x, CurrentMesh->GetPosition().y, CurrentMesh->GetPosition().z };
 
-		//ImGui::SliderFloat3("Position", Position, -180.0f, 180.0f);
-		//CurrentMesh->SetPosition(XMFLOAT3(Position[0], Position[1], Position[2]));
-  //      }
-  //  }
+	ImGui::SliderFloat3("Position", Position, -180.0f, 180.0f);
+	CurrentMesh->SetPosition(XMFLOAT3(Position[0], Position[1], Position[2]));
 
     ImGui::Text("View");
     if (ImGui::Button("Lit"))

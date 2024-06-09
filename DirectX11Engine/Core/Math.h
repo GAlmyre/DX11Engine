@@ -2,7 +2,8 @@
 
 namespace Math
 {
+	// Angles
 	float RadianToDegrees(float RadValue);
-
 	float DegreesToRadian(float DegValue);
+	float UnwindDegrees(float A);
 }

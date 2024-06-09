@@ -32,6 +32,11 @@ public:
 
 	void UpdateWorldMatrix();
 
+	// Direction vectors from transform
+	DirectX::XMFLOAT3 GetForwardVector() const;
+	DirectX::XMFLOAT3 GetRightVector() const;
+	DirectX::XMFLOAT3 GetUpVector() const;
+
 protected:
 	DirectX::XMMATRIX WorldMatrix;
 

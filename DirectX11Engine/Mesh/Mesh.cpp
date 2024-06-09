@@ -3,6 +3,7 @@
 #include "Mesh.h"
 #include <iostream>
 #include "Shaders/Shader.h"
+#include <Core/Math.h>
 
 using namespace DirectX;
 
@@ -34,7 +35,7 @@ Mesh::Mesh(aiMesh* AssimpMesh, const aiNode* Node, const aiScene* Scene, const s
 	aiVector3D NewPosition, NewRotation, NewScale;
 	Node->mTransformation.Decompose(NewScale, NewRotation, NewPosition);
 	SetPosition(XMFLOAT3(NewPosition.x, NewPosition.y, NewPosition.z));
-	SetRotation(XMFLOAT3(NewRotation.x, NewRotation.y, NewRotation.z));
+	SetRotation(XMFLOAT3(Math::RadianToDegrees(NewRotation.x), Math::RadianToDegrees(NewRotation.y), Math::RadianToDegrees(NewRotation.z)));
 	SetScale(XMFLOAT3(NewScale.x, NewScale.y, NewScale.z));
 
 	UpdateWorldMatrix();

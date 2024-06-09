@@ -45,7 +45,7 @@ class DirectionalLight : public Light
 {
 public:
 
-	DirectionalLight(DirectX::XMFLOAT3 NewPosition, DirectX::XMFLOAT4 NewAmbientColor,	DirectX::XMFLOAT4 NewDiffuseColor,	DirectX::XMFLOAT4 NewSpecularColor, DirectX::XMFLOAT3 NewDirection);
+	DirectionalLight(DirectX::XMFLOAT3 NewPosition, DirectX::XMFLOAT4 NewAmbientColor,	DirectX::XMFLOAT4 NewDiffuseColor,	DirectX::XMFLOAT4 NewSpecularColor, DirectX::XMFLOAT3 NewRotation);
 
 	// Convert this light to data for use in shaders
 	DirectionalLightData GetLightData();

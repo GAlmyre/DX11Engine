@@ -7,10 +7,10 @@ Light::Light(DirectX::XMFLOAT3 NewPosition, DirectX::XMFLOAT4 NewAmbientColor, D
 	SetPosition(NewPosition);
 }
 
-DirectionalLight::DirectionalLight(DirectX::XMFLOAT3 NewPosition, DirectX::XMFLOAT4 NewAmbientColor, DirectX::XMFLOAT4 NewDiffuseColor, DirectX::XMFLOAT4 NewSpecularColor, DirectX::XMFLOAT3 NewDirection)
+DirectionalLight::DirectionalLight(DirectX::XMFLOAT3 NewPosition, DirectX::XMFLOAT4 NewAmbientColor, DirectX::XMFLOAT4 NewDiffuseColor, DirectX::XMFLOAT4 NewSpecularColor, DirectX::XMFLOAT3 NewRotation)
 :Light(NewPosition, NewAmbientColor, NewDiffuseColor, NewSpecularColor)
 {
-	SetRotation(NewDirection);
+	SetRotation(NewRotation);
 	UpdateWorldMatrix();
 }
 
@@ -26,7 +26,7 @@ DirectionalLightData DirectionalLight::GetLightData()
 	LightData.AmbientColor = AmbientColor;
 	LightData.DiffuseColor = DiffuseColor;
 	LightData.SpecularColor = SpecularColor;
-	LightData.Direction = Rotation;
+	LightData.Direction = GetForwardVector();
 
 	return LightData;
 }
