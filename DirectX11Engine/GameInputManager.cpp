@@ -33,8 +33,7 @@ void GameInputManager::Update()
 		Owner->SceneCamera->Speed = 1.0f;
 	}
 
-	auto MouseState = Mouse->GetState();
-
+	HandleMouse();
 
 	if (KeyboardState.Up || KeyboardState.Z)
 	{
@@ -43,23 +42,6 @@ void GameInputManager::Update()
 	if (KeyboardState.Down || KeyboardState.S)
 	{
 		Zoom(-1);
-	}
-	if (KeyboardState.A)
-	{
-		RotateYaw(-.025);
-	}
-	if (KeyboardState.E)
-	{
-		RotateYaw(.025);
-	}
-
-	if (KeyboardState.W)
-	{
-		RotatePitch(-.025);
-	}
-	if (KeyboardState.C)
-	{
-		RotatePitch(.025);
 	}
 	if (KeyboardState.Left || KeyboardState.Q)
 	{
@@ -77,10 +59,10 @@ void GameInputManager::Update()
 	{
 		MoveUp(-1);
 	}
-	if (MouseState.scrollWheelValue != LastFrameWheelValue)
+	if (LastMouseState.scrollWheelValue != LastFrameWheelValue)
 	{
-		Zoom(MouseState.scrollWheelValue - LastFrameWheelValue);
-		LastFrameWheelValue = MouseState.scrollWheelValue;
+		Zoom(LastMouseState.scrollWheelValue - LastFrameWheelValue);
+		LastFrameWheelValue = LastMouseState.scrollWheelValue;
 	}
 	if (KeyboardState.NumPad1)
 	{
@@ -110,27 +92,27 @@ void GameInputManager::Update()
 	{
 		Owner->CurrentPixelShader = Owner->PixelShader;
 	}
+}
 
-	if (KeyboardState.NumPad8)
+void GameInputManager::HandleMouse()
+{
+	DirectX::Mouse::State MouseState = Mouse->GetState();
+	if (MouseState.positionMode == Mouse::MODE_RELATIVE)
 	{
-		Owner->Sun->SetRotation(XMFLOAT3(Owner->Sun->GetRotation().x, Owner->Sun->GetRotation().y, Owner->Sun->GetRotation().z + 0.01));
+		if (MouseState.x != LastX)
+		{
+			RotateYaw((LastX + MouseState.x) * 0.015);
+		}
+		if (MouseState.y != LastY)
+		{
+			RotatePitch((LastY + MouseState.y) * 0.015);
+		}
+
+		LastX = Mouse->GetState().x;
+		LastY = Mouse->GetState().y;
 	}
-	if (KeyboardState.NumPad2)
-	{
-		Owner->Sun->SetRotation(XMFLOAT3(Owner->Sun->GetRotation().x, Owner->Sun->GetRotation().y, Owner->Sun->GetRotation().z - 0.01));
-	}
-	if (KeyboardState.NumPad4)
-	{
-		Owner->Sun->SetRotation(XMFLOAT3(Owner->Sun->GetRotation().x, Owner->Sun->GetRotation().y + 0.01, Owner->Sun->GetRotation().z));
-	}
-	if (KeyboardState.NumPad6)
-	{
-		Owner->Sun->SetRotation(XMFLOAT3(Owner->Sun->GetRotation().x, Owner->Sun->GetRotation().y - 0.01, Owner->Sun->GetRotation().z));
-	}
-	if (KeyboardState.NumPad7)
-	{
-		Owner->Meshes[0]->SetRotation(XMFLOAT3(Owner->Meshes[0]->GetRotation().x, Owner->Meshes[0]->GetRotation().y + 0.0001, Owner->Meshes[0]->GetRotation().z));
-	}
+
+	Mouse->SetMode(MouseState.rightButton ? Mouse::MODE_RELATIVE : Mouse::MODE_ABSOLUTE);
 }
 
 void GameInputManager::Zoom(int ZoomValue)

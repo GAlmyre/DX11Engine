@@ -22,7 +22,6 @@ DirectX::XMFLOAT3 Actor::GetForwardVector() const
 	XMStoreFloat3(&Result, ForwardVector);
 
 	return Result;
-
 }
 
 DirectX::XMFLOAT3 Actor::GetRightVector() const

@@ -8,12 +8,21 @@ public:
 
 	void Update();
 
+	void HandleMouse();
+
 	Renderer* Owner;
+
+	DirectX::Mouse::State LastMouseState;
 
 	std::unique_ptr<DirectX::Keyboard> Keyboard;
 	std::unique_ptr<DirectX::Mouse> Mouse;
 
 private:
+
+	bool bFirstFrame = true;
+
+	int LastX, LastY;
+	
 	int LastFrameWheelValue = 0;
 
 	void Zoom(int ZoomValue);

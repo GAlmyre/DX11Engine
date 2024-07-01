@@ -134,6 +134,7 @@ private:
 
     class GameInputManager* InputManager = nullptr;
    
+    bool bToggleDirectional = true;
 
     float Pitch = 0;
     float Yaw = 0;

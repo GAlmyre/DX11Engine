@@ -59,10 +59,10 @@ void Renderer::Initialize(HWND window, int width, int height)
 
     // TODO: Change the timer settings if you want something other than the default variable timestep mode.
     // e.g. for 60 FPS fixed timestep update logic, call:
-    /*
-    m_timer.SetFixedTimeStep(true);
-    m_timer.SetTargetElapsedSeconds(1.0 / 60);
-    */
+    
+    Timer.SetFixedTimeStep(true);
+    Timer.SetTargetElapsedSeconds(1.0 / 60);
+    
 
 	if (!InputManager)
 	{
@@ -76,8 +76,10 @@ void Renderer::Tick()
 {
     Timer.Tick([&]()
     {
-        Update(Timer);
+        InputManager->Update();       
     });
+
+    Update(Timer);
 
     Render();
 }
@@ -89,7 +91,7 @@ void Renderer::Update(DX::StepTimer const& timer)
 
     FrameTime = elapsedTime;
 
-    InputManager->Update();
+    
 }
 
 // Draws the scene.
@@ -143,6 +145,12 @@ void Renderer::Render()
         PerObjectBuffStruct_VS.World = XMMatrixTranspose(Mesh->GetWorldMatrix());
 
 		PerFrameBuffStruct_PS.Sun = Sun->GetLightData();
+		if (!bToggleDirectional)
+		{
+			PerFrameBuffStruct_PS.Sun.AmbientColor = DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
+			PerFrameBuffStruct_PS.Sun.DiffuseColor = DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
+			PerFrameBuffStruct_PS.Sun.SpecularColor = DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
+		}
 
 		for (int i = 0; i < MAX_LIGHTS && i < Lights.size(); ++i)
 		{
@@ -220,8 +228,13 @@ void Renderer::DrawGui()
     static float SunSpecularColor[3] = { Sun->SpecularColor.x, Sun->SpecularColor.y, Sun->SpecularColor.z };
     static float SunDirection[3] = { Sun->GetRotation().x, Sun->GetRotation().y, Sun->GetRotation().z };
 
+    ImGui::Text("Mouse : %d, %d, %d", InputManager->LastMouseState.x, InputManager->LastMouseState.y, InputManager->Mouse->GetState().positionMode);
+
     if (ImGui::CollapsingHeader("Directional"))
     {
+		if (ImGui::Button("Toggle Directional"))
+			bToggleDirectional = !bToggleDirectional;
+
 		ImGui::ColorEdit3("Diffuse", SunDiffuseColor);
 		Sun->DiffuseColor = XMFLOAT4(SunDiffuseColor[0], SunDiffuseColor[1], SunDiffuseColor[2], 1.0f);
 
@@ -234,18 +247,6 @@ void Renderer::DrawGui()
 		ImGui::SliderFloat3("Direction", SunDirection, -180.0f, 180.0f);
 		Sun->SetRotation(XMFLOAT3(SunDirection[0], SunDirection[1], SunDirection[2]));
     }
-
-	Mesh* CurrentMesh = Meshes[0];
-	static float Rotation[3] = { CurrentMesh->GetRotation().x, CurrentMesh->GetRotation().y, CurrentMesh->GetRotation().z };
-
-	ImGui::Text("Rotation : %f, %f, %f", CurrentMesh->GetRotation().x, CurrentMesh->GetRotation().y, CurrentMesh->GetRotation().z);
-	ImGui::SliderFloat3("Rotation", Rotation, -180.0f, 180.0f);
-	CurrentMesh->SetRotation(XMFLOAT3(Rotation[0], Rotation[1], Rotation[2]));
-
-	static float Position[3] = { CurrentMesh->GetPosition().x, CurrentMesh->GetPosition().y, CurrentMesh->GetPosition().z };
-
-	ImGui::SliderFloat3("Position", Position, -180.0f, 180.0f);
-	CurrentMesh->SetPosition(XMFLOAT3(Position[0], Position[1], Position[2]));
 
     ImGui::Text("View");
     if (ImGui::Button("Lit"))
