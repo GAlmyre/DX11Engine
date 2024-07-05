@@ -123,6 +123,9 @@ private:
 	// Input layout
 	Microsoft::WRL::ComPtr<ID3D11InputLayout> InputLayout;
 
+    // BlendState
+    Microsoft::WRL::ComPtr<ID3D11BlendState1> BlendState;
+
     // RasterizerStates
     ID3D11RasterizerState* SolidState;
     ID3D11RasterizerState* WireFrameState;

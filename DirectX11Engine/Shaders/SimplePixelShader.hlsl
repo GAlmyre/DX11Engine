@@ -1,4 +1,6 @@
-Texture2D Texture;
+Texture2D Texture : register(t0);
+Texture2D NormalMap : register(t1);
+
 SamplerState ObjectSamplerState;
 
 struct Material
@@ -47,6 +49,8 @@ struct PS_INPUT
     float4 Pos : SV_POSITION;
     float4 WorldPos : POSITION;
     float3 Normal : NORMAL;
+    float3 Tangent : TANGENT;
+    float3 Binormal : BINORMAL;
     float2 TexCoord : TEXCOORD;
     float2 ReturnTex : RETTEX;
 };
@@ -95,23 +99,36 @@ float3 CalculatePointLight(PointLight Light, float3 WorldPosition, float3 Normal
     float Attenuation = 1.0 / (Light.Attenuation.x + Light.Attenuation.y * Distance + Light.Attenuation.z * (Distance * Distance));
 
     
-    //float3 Ambient = AmbientLighting(Light.Ambient) * Attenuation;
+    float3 Ambient = AmbientLighting(Light.Ambient) * Attenuation;
     float3 Diffuse = DiffuseLighting(Normal, LightDir, Light.Diffuse, TexCoord) * Attenuation;
-    //float3 Specular = SpecularLighting(Normal, LightDir, ViewDir, Light.Specular) * Attenuation;
+    float3 Specular = SpecularLighting(Normal, LightDir, ViewDir, Light.Specular) * Attenuation;
     
-    return /*Ambient + Diffuse + Specular*/Diffuse;
+    return Ambient + Diffuse + Specular;
 }
 
 float4 main(PS_INPUT input) : SV_TARGET
 {  
-    float3 N = normalize(input.Normal);
     float3 V = normalize(CamPosition - input.WorldPos.xyz);
 
-    float3 FinalColor = Texture.Sample(ObjectSamplerState, input.TexCoord) * CalculateDirectional(Sun, N, V, input.TexCoord);
+    float4 TextureColor = Texture.Sample(ObjectSamplerState, input.TexCoord);
+    
+    // Normal mapping
+    float4 BumpMap = NormalMap.Sample(ObjectSamplerState, input.TexCoord);
+    BumpMap = (BumpMap * 2.0f) - 1.0f;
+    float3 BumpNormal = (BumpMap.x * input.Tangent) + (BumpMap.y * input.Binormal) + (BumpMap.z * input.Normal);
+    BumpNormal = normalize(BumpNormal);
+    
+    // Uncomment to see without bumpmapping
+    //BumpNormal = normalize(input.Normal);
+    
+    if (TextureColor.a < 0.01)
+        discard;
+    
+    float3 FinalColor = TextureColor * CalculateDirectional(Sun, BumpNormal, V, input.TexCoord);
     
     for (int i = 0; i < LightsCount; i++)
     {
-        FinalColor += Texture.Sample(ObjectSamplerState, input.TexCoord) * CalculatePointLight(Lights[i], input.WorldPos.xyz, N, V, input.TexCoord);
+        FinalColor += TextureColor * CalculatePointLight(Lights[i], input.WorldPos.xyz, BumpNormal, V, input.TexCoord);
     }
     
     return float4(saturate(FinalColor), 1.0f);

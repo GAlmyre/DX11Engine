@@ -46,16 +46,24 @@ Mesh::Mesh(aiMesh* AssimpMesh, const aiNode* Node, const aiScene* Scene, const s
 		XMFLOAT3 VertPos = { AssimpMesh->mVertices[iVert].x, AssimpMesh->mVertices[iVert].y, AssimpMesh->mVertices[iVert].z };
 		XMFLOAT2 TexCoord = XMFLOAT2(0, 0);
 		XMFLOAT3 Normal = XMFLOAT3(0, 0, 0);
+		XMFLOAT3 Tangent = XMFLOAT3(0, 0, 0); 
+		XMFLOAT3 Binormal = XMFLOAT3(0, 0, 0);
+
 		if (AssimpMesh->mTextureCoords[0])
 		{
 			TexCoord = { AssimpMesh->mTextureCoords[0][iVert].x, AssimpMesh->mTextureCoords[0][iVert].y };
 		}
 		if (AssimpMesh->HasNormals())
 		{
-			Normal = { AssimpMesh->mNormals[iVert].x, AssimpMesh->mNormals[iVert].y, AssimpMesh->mNormals[iVert].z };
+			Normal = { AssimpMesh->mNormals[iVert].x, AssimpMesh->mNormals[iVert].y, AssimpMesh->mNormals[iVert].z };	
+		}
+		if (AssimpMesh->HasTangentsAndBitangents())
+		{
+			Tangent = { AssimpMesh->mTangents[iVert].x, AssimpMesh->mTangents[iVert].y, AssimpMesh->mTangents[iVert].z };
+			Binormal = { AssimpMesh->mBitangents[iVert].x, AssimpMesh->mBitangents[iVert].y, AssimpMesh->mBitangents[iVert].z };
 		}
 
-		AddVertex(VertPos, TexCoord, Normal);
+		AddVertex(VertPos, TexCoord, Normal, Tangent, Binormal);
 	}
 
 	// Add indices
@@ -88,19 +96,32 @@ Mesh::Mesh(aiMesh* AssimpMesh, const aiNode* Node, const aiScene* Scene, const s
 
 		Mat.SpecExp = Shininess <= 0.0f ? 64 : Shininess;
 
+		// Albedo texture
 		if (Scene->mMaterials[AssimpMesh->mMaterialIndex]->GetTextureCount(aiTextureType_DIFFUSE) > 0)
 		{
 			aiString AssimpTexturePath;
 			Scene->mMaterials[AssimpMesh->mMaterialIndex]->GetTexture(aiTextureType_DIFFUSE, 0, &AssimpTexturePath);
 			std::string StrTexturePath = std::string(AssimpTexturePath.C_Str());
-			std::wstring widePath = ContainingFolder;
-			widePath.append(DX::StringToWString(StrTexturePath));
+			std::wstring WidePath = ContainingFolder;
+			WidePath.append(DX::StringToWString(StrTexturePath));
 
-			TexturePath = widePath;
+			TexturePath = WidePath;
 		}
 		else
 		{
 			TexturePath = L"Assets/Textures/DefaultTexture.png";
+		}
+
+		// Normal Map
+		if (Scene->mMaterials[AssimpMesh->mMaterialIndex]->GetTextureCount(aiTextureType_HEIGHT) > 0)
+		{
+			aiString AssimpTexturePath;
+			Scene->mMaterials[AssimpMesh->mMaterialIndex]->GetTexture(aiTextureType_HEIGHT, 0, &AssimpTexturePath);
+			std::string StrTexturePath = std::string(AssimpTexturePath.C_Str());
+			std::wstring WidePath = ContainingFolder;
+			WidePath.append(DX::StringToWString(StrTexturePath));
+
+			NormalMapPath = WidePath;
 		}
 
 		SetMaterial(Mat);
@@ -115,12 +136,14 @@ Mesh::~Mesh()
 	Vertices.clear();
 }
 
-void Mesh::AddVertex(XMFLOAT3 Vertex, DirectX::XMFLOAT2 TextureCoord, XMFLOAT3 Normal)
+void Mesh::AddVertex(DirectX::XMFLOAT3 Vertex, DirectX::XMFLOAT2 TextureCoord, DirectX::XMFLOAT3 Normal, DirectX::XMFLOAT3 Tangent, DirectX::XMFLOAT3 Binormal)
 {
 	VertexType NewVertex;
-	NewVertex.position = Vertex;
-	NewVertex.textureCoordinate = TextureCoord;
-	NewVertex.normal = Normal;
+	NewVertex.Position = Vertex;
+	NewVertex.TextureCoordinate = TextureCoord;
+	NewVertex.Normal = Normal;
+	NewVertex.Tangent = Tangent;
+	NewVertex.Binormal = Binormal;
 
 	Vertices.push_back(NewVertex);
 }
@@ -141,8 +164,12 @@ void Mesh::Draw(Microsoft::WRL::ComPtr<ID3D11DeviceContext1> DeviceContext)
 	// Set Texture
 	if (!TexturePath.empty())
 	{
-		DeviceContext.Get()->PSSetShaderResources(0, 1, &Texture);
+		DeviceContext.Get()->PSSetShaderResources(0, 1, &AlbedoTexture);
 		DeviceContext.Get()->PSSetSamplers(0, 1, &TextureSamplerState);
+	}
+	if (!NormalMapPath.empty())
+	{
+		DeviceContext.Get()->PSSetShaderResources(1, 1, &NormalMap);
 	}
 
 	// Draw
@@ -166,7 +193,7 @@ void Mesh::InitTextures(Microsoft::WRL::ComPtr<ID3D11Device1>& Device)
 	if (TexturePath != L"")
 	{
 		// Init textures
-		HRESULT Hr = CreateWICTextureFromFile(Device.Get(), TexturePath.c_str(), nullptr, &Texture);
+		HRESULT Hr = CreateWICTextureFromFile(Device.Get(), TexturePath.c_str(), nullptr, &AlbedoTexture);
 		if (Hr != E_FAIL)
 		{
 			D3D11_SAMPLER_DESC SamplerDesc;
@@ -184,6 +211,30 @@ void Mesh::InitTextures(Microsoft::WRL::ComPtr<ID3D11Device1>& Device)
 		else
 		{
 			TexturePath = L"";
+		}
+	}
+
+	if (NormalMapPath != L"")
+	{
+		// Init textures
+		HRESULT Hr = CreateWICTextureFromFile(Device.Get(), NormalMapPath.c_str(), nullptr, &NormalMap);
+		if (Hr != E_FAIL)
+		{
+			D3D11_SAMPLER_DESC SamplerDesc;
+			ZeroMemory(&SamplerDesc, sizeof(SamplerDesc));
+			SamplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+			SamplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+			SamplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+			SamplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+			SamplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+			SamplerDesc.MinLOD = 0;
+			SamplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
+
+			DX::ThrowIfFailed(Device.Get()->CreateSamplerState(&SamplerDesc, &TextureSamplerState));
+		}
+		else
+		{
+			NormalMapPath = L"";
 		}
 	}
 }

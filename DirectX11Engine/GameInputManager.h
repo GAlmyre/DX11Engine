@@ -14,15 +14,15 @@ public:
 
 	DirectX::Mouse::State LastMouseState;
 
+private:
+
+	// Peripherals pointers
 	std::unique_ptr<DirectX::Keyboard> Keyboard;
 	std::unique_ptr<DirectX::Mouse> Mouse;
 
-private:
-
+	// Mouse values
 	bool bFirstFrame = true;
-
 	int LastX, LastY;
-	
 	int LastFrameWheelValue = 0;
 
 	void Zoom(int ZoomValue);

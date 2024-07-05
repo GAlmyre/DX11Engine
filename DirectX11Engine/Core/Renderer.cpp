@@ -116,6 +116,11 @@ void Renderer::Render()
 
 	D3dContext->OMSetRenderTargets(1, RenderTargetView.GetAddressOf(), DepthStencilView.Get());
 
+    // Blending
+	float BlendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	UINT SampleMask = 0xffffffff;
+    D3dContext->OMSetBlendState(BlendState.Get(), BlendFactor, SampleMask);
+
 	// Set the viewport
 	CD3D11_VIEWPORT viewport(0.0f, 0.0f, static_cast<float>(OutputWidth), static_cast<float>(OutputHeight));
 	D3dContext->RSSetViewports(1, &viewport);
@@ -227,8 +232,6 @@ void Renderer::DrawGui()
     static float SunAmbientColor[3] = { Sun->AmbientColor.x, Sun->AmbientColor.y, Sun->AmbientColor.z };
     static float SunSpecularColor[3] = { Sun->SpecularColor.x, Sun->SpecularColor.y, Sun->SpecularColor.z };
     static float SunDirection[3] = { Sun->GetRotation().x, Sun->GetRotation().y, Sun->GetRotation().z };
-
-    ImGui::Text("Mouse : %d, %d, %d", InputManager->LastMouseState.x, InputManager->LastMouseState.y, InputManager->Mouse->GetState().positionMode);
 
     if (ImGui::CollapsingHeader("Directional"))
     {
@@ -416,9 +419,9 @@ void Renderer::LoadNewModel(std::wstring Path)
 			Sun = new DirectionalLight(XMFLOAT3(0.8, -0.1, -0.6), XMFLOAT4(.1f, .1f, .1f, 1.0f), XMFLOAT4(1.f, 1.f, 1.f, 1.0f), XMFLOAT4(1.f, 1.f, 1.f, 1.0f), XMFLOAT3(0.8, -0.1, -0.6));
 		}
 
-        AddPointLight(XMFLOAT3(-100.0, 100.0, 0.0), XMFLOAT4(1.f, 0.f, 0.f, 1.0f), XMFLOAT4(1.f, 0.f, 0.f, 1.0f));
+        AddPointLight(XMFLOAT3(1200.0, 250.0, -10.0), XMFLOAT4(1.f, 0.f, 0.f, 1.0f), XMFLOAT4(1.f, 0.f, 0.f, 1.0f));
 
-        AddPointLight(XMFLOAT3(300.0, 100.0, 0.0), XMFLOAT4(0.f, 0.f, 1.f, 1.0f), XMFLOAT4(0.f, 0.f, 1.f, 1.0f));		
+        AddPointLight(XMFLOAT3(1200.0, 200.0, 50.0), XMFLOAT4(0.f, 0.f, 1.f, 1.0f), XMFLOAT4(0.f, 0.f, 1.f, 1.0f));		
 
     }
 }
@@ -527,7 +530,7 @@ void Renderer::CreateDevice()
     SceneCamera = new Camera();
 
     // load a mesh
-    LoadNewModel(L"Assets/Models/Shapes/TestScene.fbx");
+    LoadNewModel(L"Assets/Models/SponzaWIC/sponza.obj");
 
     // Compile the shaders
 	VertexShader = new Shader(L"Shaders/SimpleVertexShader.hlsl", EShaderType::VertexShader, device);
@@ -542,7 +545,9 @@ void Renderer::CreateDevice()
 	{
 		{ "POSITION",	0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,	D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "NORMAL",		0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12,	D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD",	0, DXGI_FORMAT_R32G32_FLOAT,	0, 24,	D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "TANGENT",	0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 24,	D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "BINORMAL",	0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 36,	D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD",	0, DXGI_FORMAT_R32G32_FLOAT,	0, 48,	D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	};
 	UINT LayoutNum = ARRAYSIZE(Layout);
 	DX::ThrowIfFailed(device->CreateInputLayout(Layout, LayoutNum, VertexShader->ShaderBuffer->GetBufferPointer(), VertexShader->ShaderBuffer->GetBufferSize(), InputLayout.GetAddressOf()));
@@ -560,6 +565,7 @@ void Renderer::CreateResources()
     D3dContext->OMSetRenderTargets(_countof(nullViews), nullViews, nullptr);
     RenderTargetView.Reset();
     DepthStencilView.Reset();
+    BlendState.Reset();
 
     D3dContext->Flush();
 
@@ -653,6 +659,13 @@ void Renderer::CreateResources()
     // TODO: Initialize windows-size dependent objects here.
     SceneCamera->UpdateProjectionMatrix(OutputWidth, OutputHeight);
 
+    // Set Blend State
+    D3D11_BLEND_DESC1 BlendStateDesc;
+    ZeroMemory(&BlendStateDesc, sizeof(D3D11_BLEND_DESC1));
+    BlendStateDesc.RenderTarget[0].BlendEnable = FALSE;
+    BlendStateDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+    DX::ThrowIfFailed(D3dDevice->CreateBlendState1(&BlendStateDesc, BlendState.GetAddressOf()));
+
     // Constant buffer
     D3D11_BUFFER_DESC ConstantBufferDescriptor;
     ZeroMemory(&ConstantBufferDescriptor, sizeof(D3D11_BUFFER_DESC));
@@ -741,6 +754,7 @@ void Renderer::OnDeviceLost()
     InputLayout->Release();
     DepthStencilView.Reset();
     RenderTargetView.Reset();
+    BlendState->Release();
 
     PerObjectBuffer_VS->Release();
     PerFrameBuffer_PS->Release();

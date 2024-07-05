@@ -27,40 +27,40 @@ void Cube::SetVerticesAndIndices()
 	Vertices =
 	{
 		// Front Face
-		VertexType(XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT2(0.0f, 1.0f)),
-		VertexType(XMFLOAT3(-1.0f,  1.0f, -1.0f), XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT2(0.0f, 0.0f)),
-		VertexType(XMFLOAT3( 1.0f,  1.0f, -1.0f), XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT2(1.0f, 0.0f)),
-		VertexType(XMFLOAT3( 1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT2(1.0f, 1.0f)),
+		VertexType(XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT2(0.0f, 1.0f)),
+		VertexType(XMFLOAT3(-1.0f,  1.0f, -1.0f), XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT2(0.0f, 0.0f)),
+		VertexType(XMFLOAT3( 1.0f,  1.0f, -1.0f), XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT2(1.0f, 0.0f)),
+		VertexType(XMFLOAT3( 1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT2(1.0f, 1.0f)),
 												  
 		//Back Face								  
-		VertexType(XMFLOAT3(-1.0f, -1.0f,  1.0f), XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT2(1.0f, 1.0f)),
-		VertexType(XMFLOAT3( 1.0f, -1.0f,  1.0f), XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT2(0.0f, 1.0f)),
-		VertexType(XMFLOAT3( 1.0f,  1.0f,  1.0f), XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT2(0.0f, 0.0f)),
-		VertexType(XMFLOAT3(-1.0f,  1.0f,  1.0f), XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT2(1.0f, 0.0f)),
+		VertexType(XMFLOAT3(-1.0f, -1.0f,  1.0f), XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT2(1.0f, 1.0f)),
+		VertexType(XMFLOAT3( 1.0f, -1.0f,  1.0f), XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT2(0.0f, 1.0f)),
+		VertexType(XMFLOAT3( 1.0f,  1.0f,  1.0f), XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT2(0.0f, 0.0f)),
+		VertexType(XMFLOAT3(-1.0f,  1.0f,  1.0f), XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT2(1.0f, 0.0f)),
 												  
 		// Top Face								  
-		VertexType(XMFLOAT3(-1.0f,  1.0f, -1.0f), XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT2(0.0f, 1.0f)),
-		VertexType(XMFLOAT3(-1.0f,  1.0f,  1.0f), XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT2(0.0f, 0.0f)),
-		VertexType(XMFLOAT3(1.0f,  1.0f,  1.0f), XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT2(1.0f, 0.0f)),
-		VertexType(XMFLOAT3(1.0f,  1.0f, -1.0f), XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT2(1.0f, 1.0f)),
+		VertexType(XMFLOAT3(-1.0f,  1.0f, -1.0f), XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT2(0.0f, 1.0f)),
+		VertexType(XMFLOAT3(-1.0f,  1.0f,  1.0f), XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT2(0.0f, 0.0f)),
+		VertexType(XMFLOAT3(1.0f,  1.0f,  1.0f), XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT2(1.0f, 0.0f)),
+		VertexType(XMFLOAT3(1.0f,  1.0f, -1.0f), XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT2(1.0f, 1.0f)),
 												  
 		// Bottom Face							  
-		VertexType(XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT2(1.0f, 1.0f)),
-		VertexType(XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT2(0.0f, 1.0f)),
-		VertexType(XMFLOAT3(1.0f, -1.0f,  1.0f), XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT2(0.0f, 0.0f)),
-		VertexType(XMFLOAT3(-1.0f, -1.0f,  1.0f), XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT2(1.0f, 0.0f)),
+		VertexType(XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT2(1.0f, 1.0f)),
+		VertexType(XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT2(0.0f, 1.0f)),
+		VertexType(XMFLOAT3(1.0f, -1.0f,  1.0f), XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT2(0.0f, 0.0f)),
+		VertexType(XMFLOAT3(-1.0f, -1.0f,  1.0f), XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT2(1.0f, 0.0f)),
 												 
 		// Left Face							  
-		VertexType(XMFLOAT3(-1.0f, -1.0f,  1.0f), XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT2(0.0f, 1.0f)),
-		VertexType(XMFLOAT3(-1.0f,  1.0f,  1.0f), XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT2(0.0f, 0.0f)),
-		VertexType(XMFLOAT3(-1.0f,  1.0f, -1.0f), XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT2(1.0f, 0.0f)),
-		VertexType(XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT2(1.0f, 1.0f)),
+		VertexType(XMFLOAT3(-1.0f, -1.0f,  1.0f), XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT2(0.0f, 1.0f)),
+		VertexType(XMFLOAT3(-1.0f,  1.0f,  1.0f), XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT2(0.0f, 0.0f)),
+		VertexType(XMFLOAT3(-1.0f,  1.0f, -1.0f), XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT2(1.0f, 0.0f)),
+		VertexType(XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT2(1.0f, 1.0f)),
 
 		// Right Face
-		VertexType(XMFLOAT3( 1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT2(0.0f, 1.0f)),
-		VertexType(XMFLOAT3( 1.0f,  1.0f, -1.0f), XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT2(0.0f, 0.0f)),
-		VertexType(XMFLOAT3( 1.0f,  1.0f,  1.0f), XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT2(1.0f, 0.0f)),
-		VertexType(XMFLOAT3( 1.0f, -1.0f,  1.0f), XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT2(1.0f, 1.0f)),
+		VertexType(XMFLOAT3( 1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT2(0.0f, 1.0f)),
+		VertexType(XMFLOAT3( 1.0f,  1.0f, -1.0f), XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT2(0.0f, 0.0f)),
+		VertexType(XMFLOAT3( 1.0f,  1.0f,  1.0f), XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT2(1.0f, 0.0f)),
+		VertexType(XMFLOAT3( 1.0f, -1.0f,  1.0f), XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT3(.0f, .0f, .0f), XMFLOAT2(1.0f, 1.0f)),
 			
 	};
 

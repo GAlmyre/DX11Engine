@@ -47,6 +47,8 @@ struct PS_INPUT
     float4 Pos : SV_POSITION;
     float4 WorldPos : POSITION;
     float3 Normal : NORMAL;
+    float3 Tangent : TANGENT;
+    float3 Binormal : BINORMAL;
     float2 TexCoord : TEXCOORD;
     float2 ReturnTex : RETTEX;
 };
