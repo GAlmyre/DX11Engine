@@ -68,10 +68,13 @@ public:
 	// Texture and material
 	ID3D11ShaderResourceView* AlbedoTexture;
 	ID3D11ShaderResourceView* NormalMap;
+	ID3D11ShaderResourceView* SpecularMap;
+
 	MaterialData Material;
 	ID3D11SamplerState* TextureSamplerState;
 	std::wstring TexturePath;
 	std::wstring NormalMapPath;
+	std::wstring SpecularMapPath;
 
 	// Buffers
 	Microsoft::WRL::ComPtr<ID3D11Buffer> VertexBuffer;
@@ -86,7 +89,7 @@ public:
 	// Initialise shaders and buffers for this mesh
 	void InitMesh(Microsoft::WRL::ComPtr<ID3D11Device1> Device, Microsoft::WRL::ComPtr<ID3D11DeviceContext1> DeviceContext);
 
-	void InitTextures(Microsoft::WRL::ComPtr<ID3D11Device1>& Device);
+	void InitTextures(Microsoft::WRL::ComPtr<ID3D11Device1>& Device, Microsoft::WRL::ComPtr<ID3D11DeviceContext1> DeviceContext);
 
 	void InitVertexBuffer(Microsoft::WRL::ComPtr<ID3D11Device1> Device, Microsoft::WRL::ComPtr<ID3D11DeviceContext1> DeviceContext);
 

@@ -78,13 +78,13 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
         RECT rc = { 0, 0, static_cast<LONG>(w), static_cast<LONG>(h) };
 
         AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, TRUE);
-
-        HMENU Menu = CreateMenu();
-
-        AppendMenuW(Menu, MF_STRING, IDM_FILE_OPEN, L"&Open");
+        
+        // Old open menu
+        //HMENU Menu = CreateMenu();
+        //AppendMenuW(Menu, MF_STRING, IDM_FILE_OPEN, L"&Open");
 
         HWND hwnd = CreateWindowExW(0, L"DirectX11EngineWindowClass", L"DirectX11Engine", WS_OVERLAPPEDWINDOW,
-            CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top, nullptr, Menu, hInstance,
+            CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top, nullptr, nullptr /*Menu*/, hInstance,
             nullptr);
 
         // TODO: Change to CreateWindowExW(WS_EX_TOPMOST, L"DirectX11EngineWindowClass", L"DirectX11Engine", WS_POPUP,
@@ -126,51 +126,6 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
     return static_cast<int>(msg.wParam);
 }
 
-void OpenModel()
-{
-    HRESULT hr;
-    IFileOpenDialog* pFileOpen;
-
-    COMDLG_FILTERSPEC Filters[1] = { L"ObjExt", L"*.obj" };
-
-    // Create the FileOpenDialog object.
-    hr = CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_ALL,
-        IID_IFileOpenDialog, reinterpret_cast<void**>(&pFileOpen));
-    //pFileOpen->SetFileTypes(1, Filters);
-
-    if (SUCCEEDED(hr))
-    {
-        // Show the Open dialog box.
-        hr = pFileOpen->Show(NULL);
-        // Get the file name from the dialog box.
-        if (SUCCEEDED(hr))
-        {
-            IShellItem* pItem;
-            hr = pFileOpen->GetResult(&pItem);
-            if (SUCCEEDED(hr))
-            {
-                PWSTR Path;
-                hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &Path);
-
-                // Display the file name to the user.
-                if (SUCCEEDED(hr))
-                {
-                    LPWSTR CurrentDirStr = new TCHAR[1024];
-                    GetCurrentDirectory(1024, CurrentDirStr);
-                    std::wstring PathStr = Path;
-                    PathStr.erase(0, wcslen(CurrentDirStr) + 1);
-                    Path = &PathStr[0];
-
-                    g_game->LoadNewModel(PathStr);
-
-                    //MessageBox(NULL, Path, L"File Path", MB_OK);
-                }
-                pItem->Release();
-            }
-        }
-    }
-}
-
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 // Windows procedure
@@ -195,7 +150,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 		case IDM_FILE_OPEN:
 
-            OpenModel();
+            //OpenModel();
             break;
 		}
         break;

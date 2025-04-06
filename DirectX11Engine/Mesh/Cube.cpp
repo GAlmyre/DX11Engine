@@ -8,6 +8,7 @@ Cube::Cube()
 {
 	SetVerticesAndIndices();
 	TexturePath = L"Assets/Textures/DefaultTexture.png";
+	NormalMapPath = L"Assets/Textures/DefaultBump.png";
 }
 
 Cube::Cube(XMFLOAT3 Position, XMFLOAT3 Rotation, XMFLOAT3 Scale)
@@ -20,6 +21,7 @@ Cube::Cube(XMFLOAT3 Position, XMFLOAT3 Rotation, XMFLOAT3 Scale)
 
 	UpdateWorldMatrix();
 	TexturePath = L"Assets/Textures/DefaultTexture.png";
+	NormalMapPath = L"Assets/Textures/DefaultBump.png";
 }
 
 void Cube::SetVerticesAndIndices()

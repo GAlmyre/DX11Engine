@@ -107,6 +107,8 @@ private:
 
     void OnDeviceLost();
 
+    void OpenModel();
+
     // Device resources.
     HWND                                            Window;
     int                                             OutputWidth;

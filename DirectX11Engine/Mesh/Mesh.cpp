@@ -17,6 +17,7 @@ Mesh::Mesh(std::vector<VertexType> Vertices, std::vector<DWORD> Indices)
 	this->Vertices = Vertices;
 	this->Indices = Indices;
 	TexturePath = L"Assets/Textures/DefaultTexture.png";
+	NormalMapPath = L"Assets/Textures/DefaultBump.png";
 	SetWorldMatrix(XMMatrixIdentity());
 }
 
@@ -123,6 +124,26 @@ Mesh::Mesh(aiMesh* AssimpMesh, const aiNode* Node, const aiScene* Scene, const s
 
 			NormalMapPath = WidePath;
 		}
+		else
+		{
+			NormalMapPath = L"Assets/Textures/DefaultBump.png";
+		}
+
+		// Specular Map
+		if (Scene->mMaterials[AssimpMesh->mMaterialIndex]->GetTextureCount(aiTextureType_SPECULAR) > 0)
+		{
+			aiString AssimpTexturePath;
+			Scene->mMaterials[AssimpMesh->mMaterialIndex]->GetTexture(aiTextureType_SPECULAR, 0, &AssimpTexturePath);
+			std::string StrTexturePath = std::string(AssimpTexturePath.C_Str());
+			std::wstring WidePath = ContainingFolder;
+			WidePath.append(DX::StringToWString(StrTexturePath));
+
+			SpecularMapPath = WidePath;
+		}
+		else
+		{
+			SpecularMapPath = L"Assets/Textures/DefaultTexture.png";
+		}
 
 		SetMaterial(Mat);
 	}
@@ -171,6 +192,10 @@ void Mesh::Draw(Microsoft::WRL::ComPtr<ID3D11DeviceContext1> DeviceContext)
 	{
 		DeviceContext.Get()->PSSetShaderResources(1, 1, &NormalMap);
 	}
+	if (!SpecularMapPath.empty())
+	{
+		DeviceContext.Get()->PSSetShaderResources(2, 1, &SpecularMap);
+	}
 
 	// Draw
 	DeviceContext->DrawIndexed(Indices.size(), 0, 0);
@@ -183,19 +208,20 @@ void Mesh::SetMaterial(MaterialData MatData)
 
 void Mesh::InitMesh(Microsoft::WRL::ComPtr<ID3D11Device1> Device, Microsoft::WRL::ComPtr<ID3D11DeviceContext1> DeviceContext)
 {
-	InitTextures(Device);
+	InitTextures(Device, DeviceContext);
 
 	InitVertexBuffer(Device, DeviceContext);
 }
 
-void Mesh::InitTextures(Microsoft::WRL::ComPtr<ID3D11Device1>& Device)
+void Mesh::InitTextures(Microsoft::WRL::ComPtr<ID3D11Device1>& Device, Microsoft::WRL::ComPtr<ID3D11DeviceContext1> DeviceContext)
 {
 	if (TexturePath != L"")
 	{
 		// Init textures
-		HRESULT Hr = CreateWICTextureFromFile(Device.Get(), TexturePath.c_str(), nullptr, &AlbedoTexture);
+		HRESULT Hr = CreateWICTextureFromFile(Device.Get(), DeviceContext.Get(), TexturePath.c_str(), nullptr, &AlbedoTexture);	
 		if (Hr != E_FAIL)
 		{
+			
 			D3D11_SAMPLER_DESC SamplerDesc;
 			ZeroMemory(&SamplerDesc, sizeof(SamplerDesc));
 			SamplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
@@ -217,9 +243,10 @@ void Mesh::InitTextures(Microsoft::WRL::ComPtr<ID3D11Device1>& Device)
 	if (NormalMapPath != L"")
 	{
 		// Init textures
-		HRESULT Hr = CreateWICTextureFromFile(Device.Get(), NormalMapPath.c_str(), nullptr, &NormalMap);
+		HRESULT Hr = CreateWICTextureFromFile(Device.Get(), DeviceContext.Get(), NormalMapPath.c_str(), nullptr, &NormalMap);	
 		if (Hr != E_FAIL)
 		{
+			
 			D3D11_SAMPLER_DESC SamplerDesc;
 			ZeroMemory(&SamplerDesc, sizeof(SamplerDesc));
 			SamplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
@@ -235,6 +262,31 @@ void Mesh::InitTextures(Microsoft::WRL::ComPtr<ID3D11Device1>& Device)
 		else
 		{
 			NormalMapPath = L"";
+		}
+	}
+
+	if (SpecularMapPath != L"")
+	{
+		// Init textures
+		HRESULT Hr = CreateWICTextureFromFile(Device.Get(), DeviceContext.Get(), SpecularMapPath.c_str(), nullptr, &SpecularMap);
+		if (Hr != E_FAIL)
+		{
+
+			D3D11_SAMPLER_DESC SamplerDesc;
+			ZeroMemory(&SamplerDesc, sizeof(SamplerDesc));
+			SamplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+			SamplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+			SamplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+			SamplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+			SamplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+			SamplerDesc.MinLOD = 0;
+			SamplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
+
+			DX::ThrowIfFailed(Device.Get()->CreateSamplerState(&SamplerDesc, &TextureSamplerState));
+		}
+		else
+		{
+			SpecularMapPath = L"";
 		}
 	}
 }

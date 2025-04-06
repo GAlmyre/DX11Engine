@@ -1,5 +1,6 @@
 #include "Core/pch.h"
 #include "Camera.h"
+#include "Core/Math.h"
 
 Camera::Camera()
 {
@@ -22,7 +23,7 @@ void Camera::UpdateViewMatrix()
 
 void Camera::UpdateProjectionMatrix(int Width, int Height)
 {
-	ProjectionMatrix = XMMatrixPerspectiveFovLH(0.4f * 3.14f, Width / Height, 0.1f, 10000.0f);
+	ProjectionMatrix = XMMatrixPerspectiveFovLH(Math::DegreesToRadian(80.0f), Width / Height, 0.1f, 10000.0f);
 }
 
 DirectX::XMVECTOR Camera::GetForwardVector()

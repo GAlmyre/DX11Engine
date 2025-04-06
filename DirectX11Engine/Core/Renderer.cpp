@@ -20,6 +20,7 @@
 #include "ImGui/imgui_impl_win32.h"
 #include "ImGui/imgui_impl_dx11.h"
 #include "Math.h"
+#include <ShObjIdl_core.h>
 
 extern void ExitGame() noexcept;
 
@@ -227,6 +228,9 @@ void Renderer::DrawGui()
 
     ImGui::Begin("Settings");
 
+	if (ImGui::Button("Open"))
+		OpenModel();
+
     ImGui::SliderFloat("Camera Speed", &SceneCamera->Speed, 0.1f, 50.0f);
 	static float SunDiffuseColor[3] = { Sun->DiffuseColor.x, Sun->DiffuseColor.y, Sun->DiffuseColor.z };
     static float SunAmbientColor[3] = { Sun->AmbientColor.x, Sun->AmbientColor.y, Sun->AmbientColor.z };
@@ -264,6 +268,8 @@ void Renderer::DrawGui()
 	if (ImGui::Button("Toggle Light Emitters"))
 		bDrawLightEmitters = !bDrawLightEmitters;
         
+    //ImGui::ShowDemoWindow();
+
     ImGui::Text("FrameTime %.3f ms/frame (%.1f FPS)", FrameTime, 1000.0 / FrameTime);
 
     ImGui::End();
@@ -419,9 +425,9 @@ void Renderer::LoadNewModel(std::wstring Path)
 			Sun = new DirectionalLight(XMFLOAT3(0.8, -0.1, -0.6), XMFLOAT4(.1f, .1f, .1f, 1.0f), XMFLOAT4(1.f, 1.f, 1.f, 1.0f), XMFLOAT4(1.f, 1.f, 1.f, 1.0f), XMFLOAT3(0.8, -0.1, -0.6));
 		}
 
-        AddPointLight(XMFLOAT3(1200.0, 250.0, -10.0), XMFLOAT4(1.f, 0.f, 0.f, 1.0f), XMFLOAT4(1.f, 0.f, 0.f, 1.0f));
+        AddPointLight(XMFLOAT3(-10.0, 10.0, -10.0), XMFLOAT4(1.f, 0.f, 0.f, 1.0f), XMFLOAT4(1.f, 0.f, 0.f, 1.0f));
 
-        AddPointLight(XMFLOAT3(1200.0, 200.0, 50.0), XMFLOAT4(0.f, 0.f, 1.f, 1.0f), XMFLOAT4(0.f, 0.f, 1.f, 1.0f));		
+        AddPointLight(XMFLOAT3(5.0, 10.0, 50.0), XMFLOAT4(0.f, 0.f, 1.f, 1.0f), XMFLOAT4(0.f, 0.f, 1.f, 1.0f));		
 
     }
 }
@@ -530,7 +536,7 @@ void Renderer::CreateDevice()
     SceneCamera = new Camera();
 
     // load a mesh
-    LoadNewModel(L"Assets/Models/SponzaWIC/sponza.obj");
+    LoadNewModel(L"Assets/Models/Shapes/TestScene.obj");
 
     // Compile the shaders
 	VertexShader = new Shader(L"Shaders/SimpleVertexShader.hlsl", EShaderType::VertexShader, device);
@@ -774,4 +780,47 @@ void Renderer::OnDeviceLost()
     CreateDevice();
 
     CreateResources();
+}
+
+void Renderer::OpenModel()
+{
+	HRESULT hr;
+	IFileOpenDialog* pFileOpen;
+
+	COMDLG_FILTERSPEC Filters[1] = { L"ObjExt", L"*.obj" };
+
+	// Create the FileOpenDialog object.
+	hr = CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_ALL,
+		IID_IFileOpenDialog, reinterpret_cast<void**>(&pFileOpen));
+	//pFileOpen->SetFileTypes(1, Filters);
+
+	if (SUCCEEDED(hr))
+	{
+		// Show the Open dialog box.
+		hr = pFileOpen->Show(NULL);
+		// Get the file name from the dialog box.
+		if (SUCCEEDED(hr))
+		{
+			IShellItem* pItem;
+			hr = pFileOpen->GetResult(&pItem);
+			if (SUCCEEDED(hr))
+			{
+				PWSTR Path;
+				hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &Path);
+
+				// Display the file name to the user.
+				if (SUCCEEDED(hr))
+				{
+					LPWSTR CurrentDirStr = new TCHAR[1024];
+					GetCurrentDirectory(1024, CurrentDirStr);
+					std::wstring PathStr = Path;
+					PathStr.erase(0, wcslen(CurrentDirStr) + 1);
+					Path = &PathStr[0];
+
+					LoadNewModel(PathStr);
+				}
+				pItem->Release();
+			}
+		}
+	}
 }
