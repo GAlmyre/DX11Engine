@@ -42,7 +42,7 @@ public:
 	// Updates the ViewMatrix depending on Position, Target and Up
 	void UpdateViewMatrix();
 
-	void UpdateProjectionMatrix(int Width, int Height);
+	void UpdateProjectionMatrix(float Width, float Height);
 	
 	XMVECTOR GetForwardVector();
 	void SetForwardVector(XMVECTOR NewForward)
