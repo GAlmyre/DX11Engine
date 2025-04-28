@@ -4,6 +4,9 @@
 
 #include "Core/pch.h"
 #include "Renderer.h"
+#include "AudioRenderer.h"
+#include "WasapiAudioRenderer.h"
+
 #include <commctrl.h>
 #include "mshtmcid.h"
 #include <shobjidl_core.h>
@@ -25,7 +28,8 @@ using namespace DirectX;
 
 namespace
 {
-    std::unique_ptr<Renderer> g_game;
+    std::unique_ptr<Renderer> MainVideoRenderer;
+    std::unique_ptr<AudioRenderer> MainAudioRenderer;
     HWND Button;
 };
 
@@ -42,6 +46,8 @@ extern "C"
 // Entry point
 int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nCmdShow)
 {
+    freopen("Log.txt", "w", stdout);
+
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
@@ -52,7 +58,10 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
     if (FAILED(hr))
         return 1;
 
-    g_game = std::make_unique<Renderer>();
+    MainVideoRenderer = std::make_unique<Renderer>();
+
+    // For now we use WASAPI but we could create it depending on the platform at some point
+    MainAudioRenderer = std::make_unique<WasapiAudioRenderer>();
 
     // Register class and create window
     {
@@ -73,7 +82,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 
         // Create window
         int w, h;
-        g_game->GetDefaultSize(w, h);
+        MainVideoRenderer->GetDefaultSize(w, h);
 
         RECT rc = { 0, 0, static_cast<LONG>(w), static_cast<LONG>(h) };
 
@@ -96,11 +105,12 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
         ShowWindow(hwnd, nCmdShow);
         // TODO: Change nCmdShow to SW_SHOWMAXIMIZED to default to fullscreen.
 
-        SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(g_game.get()) );
+        SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(MainVideoRenderer.get()) );
 
         GetClientRect(hwnd, &rc);
 
-        g_game->Initialize(hwnd, rc.right - rc.left, rc.bottom - rc.top);
+        MainVideoRenderer->Initialize(hwnd, rc.right - rc.left, rc.bottom - rc.top);
+        MainAudioRenderer->Initialize();
     }
 
     // Main message loop
@@ -115,11 +125,11 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
         }
         else
         {
-            g_game->Tick();
+            MainVideoRenderer->Tick();
         }
     }
 
-    g_game.reset();
+    MainVideoRenderer.reset();
 
     CoUninitialize();
 

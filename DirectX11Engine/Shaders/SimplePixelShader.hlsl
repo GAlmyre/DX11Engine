@@ -121,12 +121,12 @@ float4 main(PS_INPUT input) : SV_TARGET
     BumpNormal = normalize(BumpNormal);
     
     // Uncomment to see without bumpmapping
-    BumpNormal = normalize(input.Normal);
+    // BumpNormal = normalize(input.Normal);
     
     //if (TextureColor.a < 0.01)
     //    discard;
     
-    float3 FinalColor = TextureColor * CalculateDirectional(Sun, BumpNormal, V, input.TexCoord, SpecularMapValue);
+    float3 FinalColor /*= TextureColor * CalculateDirectional(Sun, BumpNormal, V, input.TexCoord, SpecularMapValue)*/;
     
     for (int i = 0; i < LightsCount; i++)
     {
@@ -134,5 +134,5 @@ float4 main(PS_INPUT input) : SV_TARGET
     }
     
     return float4(saturate(FinalColor), 1.0f);
-    //return SpecularMap.Sample(ObjectSamplerState, input.TexCoord);
+    //return NormalMap.Sample(ObjectSamplerState, input.TexCoord);
 }

@@ -110,6 +110,7 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <FloatingPointModel>Fast</FloatingPointModel>
       <AdditionalOptions>/source-charset:utf-8 /execution-charset:utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -164,6 +165,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="AudioRenderer.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Core\Actor.h" />
     <ClInclude Include="Core\Math.h" />
@@ -185,8 +187,10 @@
     <ClInclude Include="OBJ_Loader.h" />
     <ClInclude Include="Shaders\Shader.h" />
     <ClInclude Include="StepTimer.h" />
+    <ClInclude Include="WasapiAudioRenderer.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AudioRenderer.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Core\Actor.cpp" />
     <ClCompile Include="Core\Main.cpp" />
@@ -206,6 +210,7 @@
     <ClCompile Include="Mesh\Mesh.cpp" />
     <ClCompile Include="GameInputManager.cpp" />
     <ClCompile Include="Shaders\Shader.cpp" />
+    <ClCompile Include="WasapiAudioRenderer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />

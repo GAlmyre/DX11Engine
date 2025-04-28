@@ -21,6 +21,7 @@
 #include "ImGui/imgui_impl_dx11.h"
 #include "Math.h"
 #include <ShObjIdl_core.h>
+#include <thread>
 
 extern void ExitGame() noexcept;
 
@@ -160,7 +161,7 @@ void Renderer::Render()
 
 		for (int i = 0; i < MAX_LIGHTS && i < Lights.size(); ++i)
 		{
-			   PerFrameBuffStruct_PS.PointLights[i] = Lights[i].Light->GetLightData();
+			   PerFrameBuffStruct_PS.PointLights[i] = Lights[i]->Light->GetLightData();
 		}
         PerObjectBuffStruct_PS.Mat = Mesh->Material;
 
@@ -183,15 +184,15 @@ void Renderer::Render()
     if (bDrawLightEmitters)
     {
 		// Draw meshes for the lights
-		for (LightAndMesh CurrentLight : Lights)
+		for (LightAndMesh* CurrentLight : Lights)
 		{
 			D3dContext->PSSetShader(UnlitPixelShader->GetPixelShaderRef().Get(), 0, 0);
 
-            CurrentLight.LightMesh->InitMesh(D3dDevice, D3dContext);
-			WorldViewProj = CurrentLight.LightMesh->GetWorldMatrix() * SceneCamera->GetViewMatrix() * SceneCamera->GetProjectionMatrix();
+            CurrentLight->LightMesh->InitMesh(D3dDevice, D3dContext);
+			WorldViewProj = CurrentLight->LightMesh->GetWorldMatrix() * SceneCamera->GetViewMatrix() * SceneCamera->GetProjectionMatrix();
 
 			PerObjectBuffStruct_VS.WorldViewProj = XMMatrixTranspose(WorldViewProj);
-			PerObjectBuffStruct_VS.World = XMMatrixTranspose(CurrentLight.LightMesh->GetWorldMatrix());
+			PerObjectBuffStruct_VS.World = XMMatrixTranspose(CurrentLight->LightMesh->GetWorldMatrix());
 
 			PerFrameBuffStruct_PS.Sun = Sun->GetLightData();
 
@@ -209,7 +210,7 @@ void Renderer::Render()
 			D3dContext->UpdateSubresource(PerObjectBuffer_VS.Get(), 0, nullptr, &PerObjectBuffStruct_VS, 0, 0);
 			D3dContext->VSSetConstantBuffers(0, 1, PerObjectBuffer_VS.GetAddressOf());
 
-            CurrentLight.LightMesh->Draw(D3dContext);
+            CurrentLight->LightMesh->Draw(D3dContext);
 		}
     }   
 
@@ -253,6 +254,15 @@ void Renderer::DrawGui()
 
 		ImGui::SliderFloat3("Direction", SunDirection, -180.0f, 180.0f);
 		Sun->SetRotation(XMFLOAT3(SunDirection[0], SunDirection[1], SunDirection[2]));
+    }
+
+    // Handle the point lights
+	if (ImGui::CollapsingHeader("Point Lights"))
+	{
+		for (LightAndMesh* Light : Lights)
+		{
+			ImGui::ColorEdit3("PointLight", SunDiffuseColor);
+		}
     }
 
     ImGui::Text("View");
@@ -373,6 +383,8 @@ void Renderer::LoadNewModel(std::wstring Path)
 
     if (Scene)
     {
+        clock_t StartTime = clock();
+
         // Extract the models
         aiNode* Node = Scene->mRootNode;
         ParseAssimpNode(Node, Scene, Dir);
@@ -422,24 +434,27 @@ void Renderer::LoadNewModel(std::wstring Path)
 
 		if (!Sun)
 		{
-			Sun = new DirectionalLight(XMFLOAT3(0.8, -0.1, -0.6), XMFLOAT4(.1f, .1f, .1f, 1.0f), XMFLOAT4(1.f, 1.f, 1.f, 1.0f), XMFLOAT4(1.f, 1.f, 1.f, 1.0f), XMFLOAT3(0.8, -0.1, -0.6));
+			//Sun = new DirectionalLight(XMFLOAT3(0.8, -0.1, -0.6), XMFLOAT4(.1f, .1f, .1f, 1.0f), XMFLOAT4(1.f, 1.f, 1.f, 1.0f), XMFLOAT4(1.f, 1.f, 1.f, 1.0f), XMFLOAT3(128., -50., -0.6));
+            Sun = new DirectionalLight(XMFLOAT3(0.8, -0.1, -0.6), XMFLOAT4(.1f, .1f, .1f, 1.0f), XMFLOAT4(1.f, 1.f, 1.f, 1.0f), XMFLOAT4(1.f, 1.f, 1.f, 1.0f), XMFLOAT3(128., -50., -0.6));
 		}
 
-        AddPointLight(XMFLOAT3(-10.0, 10.0, -10.0), XMFLOAT4(1.f, 0.f, 0.f, 1.0f), XMFLOAT4(1.f, 0.f, 0.f, 1.0f));
+        AddPointLight(XMFLOAT3(-10.0, 10.0, -10.0), XMFLOAT4(1.f, 1.f, 1.f, 1.0f), XMFLOAT4(1.f, 1.f, 1.f, 1.0f));
 
         AddPointLight(XMFLOAT3(5.0, 10.0, 50.0), XMFLOAT4(0.f, 0.f, 1.f, 1.0f), XMFLOAT4(0.f, 0.f, 1.f, 1.0f));		
 
+		double TotalTime = ((double)clock() - StartTime) / (double)CLOCKS_PER_SEC;
+        std::cout << "--- Scene took " << TotalTime << " seconds to load" << std::endl;
     }
 }
 
 void Renderer::AddPointLight(XMFLOAT3 Position, XMFLOAT4 DiffuseColor, XMFLOAT4 SpecularColor)
 {
-    LightAndMesh NewLightStruct;
+    LightAndMesh* NewLightStruct = new LightAndMesh();
 	PointLight* NewLight = new PointLight(Position, XMFLOAT4(0.f, 0.f, 0.f, 1.0f), DiffuseColor, SpecularColor, XMFLOAT3(1.0, 0.0014, 0.000007));
     Mesh* LightMesh = new Cube(NewLight->GetPosition(), XMFLOAT3(0.0f, 0.0f, 0.0f), XMFLOAT3(5.0f, 5.0f, 5.0f));
 
-    NewLightStruct.Light = NewLight;
-    NewLightStruct.LightMesh = LightMesh;
+    NewLightStruct->Light = NewLight;
+    NewLightStruct->LightMesh = LightMesh;
 
 	Lights.push_back(NewLightStruct);
 }
@@ -450,13 +465,24 @@ void Renderer::ParseAssimpNode(aiNode* Node, const aiScene* Scene, wchar_t* Dir)
 	{
 		aiMesh* CurrentMesh = Scene->mMeshes[Node->mMeshes[i]];
 
+        clock_t CreateStart = clock();
+
 		Mesh* NewMesh = new Mesh(CurrentMesh, Node, Scene, std::wstring(Dir));
 
+		double TotalTimeCreat = ((double)clock() - CreateStart) / (double)CLOCKS_PER_SEC;
+		//std::cout << "======================= Mesh Creation " << TotalTimeCreat << " seconds" << std::endl;
+
+
+        clock_t InitStart = clock();
 		NewMesh->InitMesh(D3dDevice, D3dContext);
+
+		double TotalTimeInit = ((double)clock() - InitStart) / (double)CLOCKS_PER_SEC;
+
+		//std::cout << "======================= Mesh Init " << TotalTimeInit << " seconds" << std::endl;
 		Meshes.push_back(NewMesh);
 	}
 
-    for (unsigned int i = 0; i < Node->mNumChildren; ++i)
+    for (unsigned int i = 0; i < Node->mNumChildren; i++)
     {
         ParseAssimpNode(Node->mChildren[i], Scene, Dir);
     }

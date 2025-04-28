@@ -29,6 +29,9 @@
     <Filter Include="ImGui">
       <UniqueIdentifier>{486d3a3f-32fa-4e8a-9cb1-1e6ee9b58d39}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Audio">
+      <UniqueIdentifier>{13d89fdb-1e78-4fc0-adcb-ff8b66d5bbdb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="StepTimer.h" />
@@ -92,6 +95,10 @@
     <ClInclude Include="Core\Math.h">
       <Filter>Core</Filter>
     </ClInclude>
+    <ClInclude Include="AudioRenderer.h">
+      <Filter>Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="WasapiAudioRenderer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp">
@@ -151,6 +158,10 @@
     <ClCompile Include="Core\Math.cpp">
       <Filter>Core</Filter>
     </ClCompile>
+    <ClCompile Include="AudioRenderer.cpp">
+      <Filter>Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="WasapiAudioRenderer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />

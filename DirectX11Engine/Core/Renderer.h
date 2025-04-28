@@ -86,7 +86,7 @@ public:
 
     // A scene can contain one directional light and MAX_LIGHTS PointLights
 	DirectionalLight* Sun = nullptr;
-    std::vector<LightAndMesh> Lights;
+    std::vector<LightAndMesh*> Lights;
 	class Camera* SceneCamera = nullptr;
 	// ***  SCENE CLASS ***
 

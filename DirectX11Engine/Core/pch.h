@@ -41,6 +41,8 @@
 #include <memory>
 #include <locale>
 #include <codecvt>
+#include <time.h>
+#include <iostream>
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
