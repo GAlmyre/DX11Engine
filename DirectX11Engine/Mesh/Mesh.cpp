@@ -24,7 +24,6 @@ Mesh::Mesh(std::vector<VertexType> Vertices, std::vector<DWORD> Indices)
 
 Mesh::Mesh(aiMesh* AssimpMesh, const aiNode* Node, const aiScene* Scene, const std::wstring& ContainingFolder)
 {
-	std::clock_t StartTime = clock();
 	//XMMATRIX NewWorldMatrix = XMMATRIX(	Node->mTransformation.a1, Node->mTransformation.b1, Node->mTransformation.c1, Node->mTransformation.d1,
 	//									Node->mTransformation.a2, Node->mTransformation.b2, Node->mTransformation.c2, Node->mTransformation.d2,
 	//									Node->mTransformation.a3, Node->mTransformation.b3, Node->mTransformation.c3, Node->mTransformation.d3,
@@ -106,7 +105,7 @@ Mesh::Mesh(aiMesh* AssimpMesh, const aiNode* Node, const aiScene* Scene, const s
 			std::string StrTexturePath = std::string(AssimpTexturePath.C_Str());
 
 			std::filesystem::path Path(StrTexturePath);
-			std::wstring WidePath = L"";
+			std::wstring WidePath;
 			if (Path.is_relative())
 			{
 				WidePath = ContainingFolder;
@@ -120,15 +119,31 @@ Mesh::Mesh(aiMesh* AssimpMesh, const aiNode* Node, const aiScene* Scene, const s
 			TexturePath = L"Assets/Textures/DefaultTexture.png";
 		}
 
-		// Normal Map
-		if (Scene->mMaterials[AssimpMesh->mMaterialIndex]->GetTextureCount(aiTextureType_HEIGHT) > 0)
+		// Normal Map (it can be called height or normals depending on the file format)
+		if (Scene->mMaterials[AssimpMesh->mMaterialIndex]->GetTextureCount(aiTextureType_NORMALS) > 0)
+		{
+			aiString AssimpTexturePath;
+			Scene->mMaterials[AssimpMesh->mMaterialIndex]->GetTexture(aiTextureType_NORMALS, 0, &AssimpTexturePath);
+			std::string StrTexturePath = std::string(AssimpTexturePath.C_Str());
+
+			std::filesystem::path Path(StrTexturePath);
+			std::wstring WidePath;
+			if (Path.is_relative())
+			{
+				WidePath = ContainingFolder;
+			}
+			WidePath.append(DX::StringToWString(StrTexturePath));
+
+			NormalMapPath = WidePath;
+		}
+		else if (Scene->mMaterials[AssimpMesh->mMaterialIndex]->GetTextureCount(aiTextureType_HEIGHT) > 0)
 		{
 			aiString AssimpTexturePath;
 			Scene->mMaterials[AssimpMesh->mMaterialIndex]->GetTexture(aiTextureType_HEIGHT, 0, &AssimpTexturePath);
 			std::string StrTexturePath = std::string(AssimpTexturePath.C_Str());
 
 			std::filesystem::path Path(StrTexturePath);
-			std::wstring WidePath = L"";
+			std::wstring WidePath;
 			if (Path.is_relative())
 			{
 				WidePath = ContainingFolder;
@@ -150,7 +165,7 @@ Mesh::Mesh(aiMesh* AssimpMesh, const aiNode* Node, const aiScene* Scene, const s
 			std::string StrTexturePath = std::string(AssimpTexturePath.C_Str());
 
 			std::filesystem::path Path(StrTexturePath);
-			std::wstring WidePath = L"";
+			std::wstring WidePath;
 			if (Path.is_relative())
 			{
 				WidePath = ContainingFolder;
@@ -166,9 +181,6 @@ Mesh::Mesh(aiMesh* AssimpMesh, const aiNode* Node, const aiScene* Scene, const s
 
 		SetMaterial(Mat);
 	}
-
-	double TotalTime = ((double)clock() - StartTime) / (double)CLOCKS_PER_SEC;
-	std::cout << AssimpMesh->mName.C_Str() << " took " << TotalTime << " seconds to load" << std::endl;
 }
 
 Mesh::~Mesh()
@@ -229,25 +241,13 @@ void Mesh::SetMaterial(MaterialData MatData)
 
 void Mesh::InitMesh(Microsoft::WRL::ComPtr<ID3D11Device1> Device, Microsoft::WRL::ComPtr<ID3D11DeviceContext1> DeviceContext)
 {
-	clock_t TextStart = clock();
-
 	InitTextures(Device, DeviceContext);
 
-	double TotalTimeTex = ((double)clock() - TextStart) / (double)CLOCKS_PER_SEC;
-	//std::cout << "======================= Texture Init " << TotalTimeTex << " seconds" << std::endl;
-
-	clock_t VertStart = clock();
 	InitVertexBuffer(Device, DeviceContext);
-	double TotalTimeVert = ((double)clock() - VertStart) / (double)CLOCKS_PER_SEC;
-	//std::cout << "======================= Texture Init " << TotalTimeVert << " seconds" << std::endl;
 }
 
 void Mesh::InitTextures(Microsoft::WRL::ComPtr<ID3D11Device1>& Device, Microsoft::WRL::ComPtr<ID3D11DeviceContext1> DeviceContext)
 {
-	std::cout << "Texture : " << std::string(TexturePath.begin(), TexturePath.end()) << std::endl;
-	std::cout << "Spec : " << std::string(SpecularMapPath.begin(), SpecularMapPath.end()) << std::endl;
-	std::cout << "Bump : " << std::string(NormalMapPath.begin(), NormalMapPath.end()) << std::endl;
-
 	if (TexturePath != L"")
 	{
 		// Init textures

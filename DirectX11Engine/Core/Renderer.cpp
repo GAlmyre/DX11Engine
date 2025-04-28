@@ -3,7 +3,6 @@
 //
 
 #include "Core/pch.h"
-#include "Mesh/Mesh.h"
 #include "Mesh/Cube.h"
 #include "Camera.h"
 #include "GameInputManager.h"
@@ -22,6 +21,7 @@
 #include "Math.h"
 #include <ShObjIdl_core.h>
 #include <thread>
+#include <array>
 
 extern void ExitGame() noexcept;
 
@@ -257,11 +257,21 @@ void Renderer::DrawGui()
     }
 
     // Handle the point lights
+    std::vector< std::array<float, 3>> PointLightsLocations;
+	for (LightAndMesh* Light : Lights)
+	{
+        std::array<float, 3> NewLocation = { Light->Light->GetPosition().x, Light->Light->GetPosition().y, Light->Light->GetPosition().z };
+        PointLightsLocations.push_back(NewLocation);
+    }
+
 	if (ImGui::CollapsingHeader("Point Lights"))
 	{
+        int LightIndex = 0;
 		for (LightAndMesh* Light : Lights)
 		{
-			ImGui::ColorEdit3("PointLight", SunDiffuseColor);
+			ImGui::SliderFloat3("Location", &PointLightsLocations[LightIndex][0], -1500.0f, 1500.0f);
+            Light->SetPosition(XMFLOAT3(PointLightsLocations[LightIndex][0], PointLightsLocations[LightIndex][1], PointLightsLocations[LightIndex][2]));
+            LightIndex++;
 		}
     }
 
@@ -383,74 +393,32 @@ void Renderer::LoadNewModel(std::wstring Path)
 
     if (Scene)
     {
-        clock_t StartTime = clock();
-
         // Extract the models
         aiNode* Node = Scene->mRootNode;
-        ParseAssimpNode(Node, Scene, Dir);
-
-        if (Sun)
-        {
-            delete Sun;
-            Sun = nullptr;
-        }
         Lights.clear();
+		if (Sun)
+		{
+			delete Sun;
+			Sun = nullptr;
+		}
 
-        // Extract the lights
-        for (unsigned int i = 0; i < Scene->mNumLights; ++i)
-        {
-            aiLight* CurrentLight = Scene->mLights[i];
-
-            if (CurrentLight)
-            {
-				XMFLOAT3 Position = XMFLOAT3(CurrentLight->mPosition.x, CurrentLight->mPosition.y, CurrentLight->mPosition.z);
-				XMFLOAT4 Ambient = XMFLOAT4(CurrentLight->mColorAmbient.r, CurrentLight->mColorAmbient.g, CurrentLight->mColorAmbient.b, 1.0f);
-				XMFLOAT4 Diffuse = XMFLOAT4(CurrentLight->mColorDiffuse.r, CurrentLight->mColorDiffuse.g, CurrentLight->mColorDiffuse.b, 1.0f);
-				XMFLOAT4 Specular = XMFLOAT4(CurrentLight->mColorSpecular.r, CurrentLight->mColorSpecular.g, CurrentLight->mColorSpecular.b, 1.0f);
-
-				if (CurrentLight->mType == aiLightSource_DIRECTIONAL)
-				{
-					XMFLOAT3 Direction = XMFLOAT3(CurrentLight->mDirection.x, CurrentLight->mDirection.y, CurrentLight->mDirection.z);
-
-					DirectionalLight* Directional = new DirectionalLight(Position, Ambient, Diffuse, Specular, Direction);
-                    // We add some ambient as we do not have GI for now
-                    if (Directional->AmbientColor.x == 0.0f && Directional->AmbientColor.y == 0.0f && Directional->AmbientColor.z == 0.0f);
-                    {
-                        Directional->AmbientColor = XMFLOAT4(.1f, .1f, .1f, 1.0f);
-                    }
-
-					Sun = Directional;
-				}
-
-				if (CurrentLight->mType == aiLightSource_POINT)
-				{
-					//XMFLOAT3 Attenuation = XMFLOAT3(CurrentLight->mAttenuationConstant, CurrentLight->mAttenuationLinear, CurrentLight->mAttenuationQuadratic);
-
-					//PointLight* Point = new PointLight(Position, Ambient, Diffuse, Specular, Attenuation);
-					//Lights.push_back(Point);
-				}
-            }		
-        }
+        ParseAssimpNode(Node, Scene, Dir);
 
 		if (!Sun)
 		{
-			//Sun = new DirectionalLight(XMFLOAT3(0.8, -0.1, -0.6), XMFLOAT4(.1f, .1f, .1f, 1.0f), XMFLOAT4(1.f, 1.f, 1.f, 1.0f), XMFLOAT4(1.f, 1.f, 1.f, 1.0f), XMFLOAT3(128., -50., -0.6));
-            Sun = new DirectionalLight(XMFLOAT3(0.8, -0.1, -0.6), XMFLOAT4(.1f, .1f, .1f, 1.0f), XMFLOAT4(1.f, 1.f, 1.f, 1.0f), XMFLOAT4(1.f, 1.f, 1.f, 1.0f), XMFLOAT3(128., -50., -0.6));
+            Sun = new DirectionalLight(XMFLOAT3(0.8, -0.1, -0.6), XMFLOAT4(.1f, .1f, .1f, 1.0f), XMFLOAT4(0.f, 0.f, 0.f, 1.0f), XMFLOAT4(0.f, 0.f, 0.f, 1.0f), XMFLOAT3(128., -50., -0.6));
 		}
 
-        AddPointLight(XMFLOAT3(-10.0, 10.0, -10.0), XMFLOAT4(1.f, 1.f, 1.f, 1.0f), XMFLOAT4(1.f, 1.f, 1.f, 1.0f));
-
-        AddPointLight(XMFLOAT3(5.0, 10.0, 50.0), XMFLOAT4(0.f, 0.f, 1.f, 1.0f), XMFLOAT4(0.f, 0.f, 1.f, 1.0f));		
-
-		double TotalTime = ((double)clock() - StartTime) / (double)CLOCKS_PER_SEC;
-        std::cout << "--- Scene took " << TotalTime << " seconds to load" << std::endl;
+        //AddPointLight(XMFLOAT3(-10.0, 10.0, -10.0), XMFLOAT4(1.f, 1.f, 1.f, 1.0f), XMFLOAT4(1.f, 1.f, 1.f, 1.0f));		
     }
 }
 
-void Renderer::AddPointLight(XMFLOAT3 Position, XMFLOAT4 DiffuseColor, XMFLOAT4 SpecularColor)
+void Renderer::AddPointLight(XMFLOAT3 Position, XMFLOAT4 DiffuseColor, XMFLOAT4 SpecularColor, XMFLOAT3 Attenuation)
 {
     LightAndMesh* NewLightStruct = new LightAndMesh();
+    // We override attenuation as assimp doesn't get it right from fbx files
 	PointLight* NewLight = new PointLight(Position, XMFLOAT4(0.f, 0.f, 0.f, 1.0f), DiffuseColor, SpecularColor, XMFLOAT3(1.0, 0.0014, 0.000007));
+    //PointLight* NewLight = new PointLight(Position, XMFLOAT4(0.f, 0.f, 0.f, 1.0f), DiffuseColor, SpecularColor, Attenuation);
     Mesh* LightMesh = new Cube(NewLight->GetPosition(), XMFLOAT3(0.0f, 0.0f, 0.0f), XMFLOAT3(5.0f, 5.0f, 5.0f));
 
     NewLightStruct->Light = NewLight;
@@ -461,24 +429,38 @@ void Renderer::AddPointLight(XMFLOAT3 Position, XMFLOAT4 DiffuseColor, XMFLOAT4 
 
 void Renderer::ParseAssimpNode(aiNode* Node, const aiScene* Scene, wchar_t* Dir)
 {
+	aiLight* Light = nullptr;
+	// Check if this is a light
+	for (unsigned int LightIndex = 0; LightIndex < Scene->mNumLights; ++LightIndex)
+	{
+		if (Scene->mLights[LightIndex]->mName == Node->mName)
+		{
+			Light = Scene->mLights[LightIndex];
+		}
+	}
+
+	if (Light)
+	{
+        aiVector3D NodePosition, NodeScaling, NodeRotation;
+        Node->mTransformation.Decompose(NodeScaling, NodeRotation, NodePosition);
+
+		XMFLOAT3 Position = XMFLOAT3(NodePosition.x + Light->mPosition.x, NodePosition.y + Light->mPosition.y, NodePosition.z + Light->mPosition.z);
+		XMFLOAT4 Ambient = XMFLOAT4(Light->mColorAmbient.r, Light->mColorAmbient.g, Light->mColorAmbient.b, 1.0f);
+		XMFLOAT4 Diffuse = XMFLOAT4(Light->mColorDiffuse.r, Light->mColorDiffuse.g, Light->mColorDiffuse.b, 1.0f);
+		XMFLOAT4 Specular = XMFLOAT4(Light->mColorSpecular.r, Light->mColorSpecular.g, Light->mColorSpecular.b, 1.0f);
+
+		if (Light->mType == aiLightSource_POINT)
+		{
+			XMFLOAT3 Attenuation = XMFLOAT3(Light->mAttenuationConstant, Light->mAttenuationLinear, Light->mAttenuationQuadratic);
+            AddPointLight(Position, XMFLOAT4(1.f, 1.f, 1.f, 1.0f), XMFLOAT4(1.f, 1.f, 1.f, 1.0f), Attenuation);
+        }
+	}
+
 	for (unsigned int i = 0; i < Node->mNumMeshes; ++i)
 	{
 		aiMesh* CurrentMesh = Scene->mMeshes[Node->mMeshes[i]];
-
-        clock_t CreateStart = clock();
-
 		Mesh* NewMesh = new Mesh(CurrentMesh, Node, Scene, std::wstring(Dir));
-
-		double TotalTimeCreat = ((double)clock() - CreateStart) / (double)CLOCKS_PER_SEC;
-		//std::cout << "======================= Mesh Creation " << TotalTimeCreat << " seconds" << std::endl;
-
-
-        clock_t InitStart = clock();
 		NewMesh->InitMesh(D3dDevice, D3dContext);
-
-		double TotalTimeInit = ((double)clock() - InitStart) / (double)CLOCKS_PER_SEC;
-
-		//std::cout << "======================= Mesh Init " << TotalTimeInit << " seconds" << std::endl;
 		Meshes.push_back(NewMesh);
 	}
 

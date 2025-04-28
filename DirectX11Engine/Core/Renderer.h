@@ -7,6 +7,7 @@
 #include "StepTimer.h"
 #include "Lights/Light.h"
 #include "Mesh/Material.h"
+#include "Mesh/Mesh.h"
 
 class Shader;
 class Mesh;
@@ -35,6 +36,18 @@ struct LightAndMesh
 {
     PointLight* Light = nullptr;
     Mesh* LightMesh = nullptr;
+
+    void SetPosition(DirectX::XMFLOAT3 NewPos)
+    {
+        if (Light)
+        {
+            Light->SetPosition(NewPos);
+        }
+		if (LightMesh)
+		{
+            LightMesh->SetPosition(NewPos);
+		}
+    }
 };
 
 // A basic game implementation that creates a D3D11 device and
@@ -70,7 +83,7 @@ public:
 
     void LoadNewModel(std::wstring Path);
 
-    void AddPointLight(DirectX::XMFLOAT3 Position, DirectX::XMFLOAT4 DiffuseColor, DirectX::XMFLOAT4 SpecularColor);
+    void AddPointLight(DirectX::XMFLOAT3 Position, DirectX::XMFLOAT4 DiffuseColor, DirectX::XMFLOAT4 SpecularColor, DirectX::XMFLOAT3 Attenuation);
 
     void ParseAssimpNode(aiNode* Node, const aiScene* Scene, wchar_t* Dir);
 
