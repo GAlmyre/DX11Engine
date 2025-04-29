@@ -544,7 +544,7 @@ void Renderer::CreateDevice()
     SceneCamera = new Camera();
 
     // load a mesh
-    LoadNewModel(L"Assets/Models/Shapes/TestScene.obj");
+    LoadNewModel(L"Assets/Models/Shapes/TestScene.fbx");
 
     // Compile the shaders
 	VertexShader = new Shader(L"Shaders/SimpleVertexShader.hlsl", EShaderType::VertexShader, device);
