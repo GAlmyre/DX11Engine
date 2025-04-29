@@ -4,6 +4,7 @@
 //
 
 #pragma once
+#pragma warning(disable: 4100)
 
 #include <winsdkver.h>
 #define _WIN32_WINNT 0x0601
@@ -70,6 +71,8 @@
 #include "WICTextureLoader.h"
 #include <xlocbuf>
 
+#include "Logger.h"
+
 #define MAX_LIGHTS 5
 
 namespace DX
@@ -83,19 +86,19 @@ namespace DX
         }
     }
 
-	inline std::wstring StringToWString(const std::string& str)
-	{
-		using convert_typeX = std::codecvt_utf8<wchar_t>;
-		std::wstring_convert<convert_typeX, wchar_t> converterX;
-
-		return converterX.from_bytes(str);
-	}
-
 	inline std::string WStringToString(const std::wstring& wstr)
 	{
-		using convert_typeX = std::codecvt_utf8<wchar_t>;
-		std::wstring_convert<convert_typeX, wchar_t> converterX;
+		int count = WideCharToMultiByte(CP_ACP, 0, wstr.c_str(), (int)wstr.length(), NULL, 0, NULL, NULL);
+		std::string str(count, 0);
+		WideCharToMultiByte(CP_ACP, 0, wstr.c_str(), -1, &str[0], count, NULL, NULL);
+		return str;
+	}
 
-		return converterX.to_bytes(wstr);
+	inline std::wstring StringToWString(const std::string& str)
+	{
+		int count = MultiByteToWideChar(CP_ACP, 0, str.c_str(), (int)str.length(), NULL, 0);
+		std::wstring wstr(count, 0);
+		MultiByteToWideChar(CP_ACP, 0, str.c_str(), (int)str.length(), &wstr[0], count);
+		return wstr;
 	}
 }

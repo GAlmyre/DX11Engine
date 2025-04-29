@@ -3,42 +3,17 @@ SamplerState ObjectSamplerState;
 
 struct Material
 {
-    float3 AmbientColor;
-    float3 DiffuseColor;
-    float3 SpecularColor;
+    float4 AmbientColor;
+    float4 DiffuseColor;
+    float4 SpecularColor;
     float SpecExponent;
-};
-
-struct PointLight
-{
-    float3 Position;
-    float4 Ambient;
-    float4 Diffuse;
-    float4 Specular;
-    float3 Attenuation;
-    float Range;
-};
-
-struct DirectionalLight
-{
-    float4 Ambient;
-    float4 Diffuse;
-    float4 Specular;
-    float3 Dir;
-};
-
-cbuffer cbPerFrame
-{
-    // The directional light of our scene
-    DirectionalLight Sun;
-    PointLight Light;
-    float3 CamPosition;
-    float LightsCount;
+    int bUseAlbedoTexture;
+    int bUseNormalMap;
+    int bUseSpecularMap;
 };
 
 cbuffer cbPerObject
 {
-    // The directional light of our scene
     Material CurrentMaterial;
 };
 
@@ -55,6 +30,15 @@ struct PS_INPUT
 
 float4 main(PS_INPUT input) : SV_TARGET
 {  
-    float3 FinalColor = Texture.Sample(ObjectSamplerState, input.TexCoord);
+    float3 FinalColor;
+    if (CurrentMaterial.bUseAlbedoTexture == 0)
+    {
+        FinalColor = (float3)CurrentMaterial.DiffuseColor;
+    }
+    else
+    {
+        FinalColor = (float3)Texture.Sample(ObjectSamplerState, input.TexCoord);
+    }
+        
     return float4(saturate(FinalColor), 1.0f);    
 }

@@ -17,8 +17,8 @@ Mesh::Mesh(std::vector<VertexType> Vertices, std::vector<DWORD> Indices)
 {
 	this->Vertices = Vertices;
 	this->Indices = Indices;
-	TexturePath = L"Assets/Textures/DefaultTexture.png";
-	NormalMapPath = L"Assets/Textures/DefaultBump.png";
+	//TexturePath = L"Assets/Textures/DefaultTexture.png";
+	//NormalMapPath = L"Assets/Textures/DefaultBump.png";
 	SetWorldMatrix(XMMatrixIdentity());
 }
 
@@ -42,7 +42,7 @@ Mesh::Mesh(aiMesh* AssimpMesh, const aiNode* Node, const aiScene* Scene, const s
 	UpdateWorldMatrix();
 
 	// Add VertPos, TexCoord and Normal for each Vertex 
-	for (int iVert = 0; iVert < AssimpMesh->mNumVertices; ++iVert)
+	for (UINT32 iVert = 0; iVert < AssimpMesh->mNumVertices; ++iVert)
 	{
 		XMFLOAT3 VertPos = { AssimpMesh->mVertices[iVert].x, AssimpMesh->mVertices[iVert].y, AssimpMesh->mVertices[iVert].z };
 		XMFLOAT2 TexCoord = XMFLOAT2(0, 0);
@@ -68,9 +68,9 @@ Mesh::Mesh(aiMesh* AssimpMesh, const aiNode* Node, const aiScene* Scene, const s
 	}
 
 	// Add indices
-	for (int iFaces = 0; iFaces < AssimpMesh->mNumFaces; ++iFaces)
+	for (UINT32 iFaces = 0; iFaces < AssimpMesh->mNumFaces; ++iFaces)
 	{
-		for (int iIndex = 0; iIndex < AssimpMesh->mFaces->mNumIndices; ++iIndex)
+		for (UINT32 iIndex = 0; iIndex < AssimpMesh->mFaces->mNumIndices; ++iIndex)
 		{
 			AddIndex(AssimpMesh->mFaces[iFaces].mIndices[iIndex]);
 		}
@@ -91,11 +91,11 @@ Mesh::Mesh(aiMesh* AssimpMesh, const aiNode* Node, const aiScene* Scene, const s
 		Res = Scene->mMaterials[AssimpMesh->mMaterialIndex]->Get(AI_MATKEY_COLOR_SPECULAR, SpecularColor);
 		Res = Scene->mMaterials[AssimpMesh->mMaterialIndex]->Get(AI_MATKEY_SHININESS, Shininess);
 
-		Mat.DiffuseColor = XMFLOAT3(DiffuseColor.r, DiffuseColor.g, DiffuseColor.b);
-		Mat.AmbientColor = XMFLOAT3(AmbientColor.r, AmbientColor.g, AmbientColor.b);
-		Mat.SpecularColor = XMFLOAT3(SpecularColor.r, SpecularColor.g, SpecularColor.b);
+		Mat.DiffuseColor = XMFLOAT4(DiffuseColor.r, DiffuseColor.g, DiffuseColor.b, 1.0f);
+		Mat.AmbientColor = XMFLOAT4(AmbientColor.r, AmbientColor.g, AmbientColor.b, 1.0f);
+		Mat.SpecularColor = XMFLOAT4(SpecularColor.r, SpecularColor.g, SpecularColor.b, 1.0f);
 
-		Mat.SpecExp = Shininess <= 0.0f ? 64 : Shininess;
+		Mat.SpecExp = Shininess <= 0.0f ? 32 : Shininess;
 
 		// Albedo texture
 		if (Scene->mMaterials[AssimpMesh->mMaterialIndex]->GetTextureCount(aiTextureType_DIFFUSE) > 0)
@@ -113,10 +113,11 @@ Mesh::Mesh(aiMesh* AssimpMesh, const aiNode* Node, const aiScene* Scene, const s
 			WidePath.append(DX::StringToWString(StrTexturePath));
 
 			TexturePath = WidePath;
+			Mat.bUseAlbedoTexture = true;
 		}
 		else
 		{
-			TexturePath = L"Assets/Textures/DefaultTexture.png";
+			Mat.bUseAlbedoTexture = false;
 		}
 
 		// Normal Map (it can be called height or normals depending on the file format)
@@ -135,6 +136,7 @@ Mesh::Mesh(aiMesh* AssimpMesh, const aiNode* Node, const aiScene* Scene, const s
 			WidePath.append(DX::StringToWString(StrTexturePath));
 
 			NormalMapPath = WidePath;
+			Mat.bUseNormalMap = true;
 		}
 		else if (Scene->mMaterials[AssimpMesh->mMaterialIndex]->GetTextureCount(aiTextureType_HEIGHT) > 0)
 		{
@@ -151,10 +153,11 @@ Mesh::Mesh(aiMesh* AssimpMesh, const aiNode* Node, const aiScene* Scene, const s
 			WidePath.append(DX::StringToWString(StrTexturePath));
 
 			NormalMapPath = WidePath;
+			Mat.bUseNormalMap = true;
 		}
 		else
 		{
-			NormalMapPath = L"Assets/Textures/DefaultBump.png";
+			Mat.bUseNormalMap = false;
 		}
 
 		// Specular Map
@@ -173,10 +176,11 @@ Mesh::Mesh(aiMesh* AssimpMesh, const aiNode* Node, const aiScene* Scene, const s
 			WidePath.append(DX::StringToWString(StrTexturePath));
 
 			SpecularMapPath = WidePath;
+			Mat.bUseSpecularMap = true;
 		}
 		else
 		{
-			SpecularMapPath = L"Assets/Textures/DefaultTexture.png";
+			Mat.bUseSpecularMap = false;
 		}
 
 		SetMaterial(Mat);
@@ -231,7 +235,7 @@ void Mesh::Draw(Microsoft::WRL::ComPtr<ID3D11DeviceContext1> DeviceContext)
 	}
 
 	// Draw
-	DeviceContext->DrawIndexed(Indices.size(), 0, 0);
+	DeviceContext->DrawIndexed((UINT)Indices.size(), 0, 0);
 }
 
 void Mesh::SetMaterial(MaterialData MatData)
@@ -248,7 +252,7 @@ void Mesh::InitMesh(Microsoft::WRL::ComPtr<ID3D11Device1> Device, Microsoft::WRL
 
 void Mesh::InitTextures(Microsoft::WRL::ComPtr<ID3D11Device1>& Device, Microsoft::WRL::ComPtr<ID3D11DeviceContext1> DeviceContext)
 {
-	if (TexturePath != L"")
+	if (!TexturePath.empty())
 	{
 		// Init textures
 		HRESULT Hr = CreateWICTextureFromFile(Device.Get(), DeviceContext.Get(), TexturePath.c_str(), nullptr, &AlbedoTexture);	
@@ -268,11 +272,12 @@ void Mesh::InitTextures(Microsoft::WRL::ComPtr<ID3D11Device1>& Device, Microsoft
 		}
 		else
 		{
+			Logger::Log("Failed to create texture " + DX::WStringToString(TexturePath), LogSeverity::Warning);
 			TexturePath = L"";
 		}
 	}
 
-	if (NormalMapPath != L"")
+	if (!NormalMapPath.empty())
 	{
 		// Init textures
 		HRESULT Hr = CreateWICTextureFromFile(Device.Get(), DeviceContext.Get(), NormalMapPath.c_str(), nullptr, &NormalMap);	
@@ -293,11 +298,13 @@ void Mesh::InitTextures(Microsoft::WRL::ComPtr<ID3D11Device1>& Device, Microsoft
 		}
 		else
 		{
+
+			Logger::Log("Failed to create texture " + DX::WStringToString(NormalMapPath), LogSeverity::Warning);
 			NormalMapPath = L"";
 		}
 	}
 
-	if (SpecularMapPath != L"")
+	if (!SpecularMapPath.empty())
 	{
 		// Init textures
 		HRESULT Hr = CreateWICTextureFromFile(Device.Get(), DeviceContext.Get(), SpecularMapPath.c_str(), nullptr, &SpecularMap);
@@ -318,6 +325,8 @@ void Mesh::InitTextures(Microsoft::WRL::ComPtr<ID3D11Device1>& Device, Microsoft
 		}
 		else
 		{
+
+			Logger::Log("Failed to create texture " + DX::WStringToString(SpecularMapPath), LogSeverity::Warning);
 			SpecularMapPath = L"";
 		}
 	}
@@ -330,7 +339,7 @@ void Mesh::InitVertexBuffer(Microsoft::WRL::ComPtr<ID3D11Device1> Device, Micros
 	ZeroMemory(&VertexBufferDesc, sizeof(VertexBufferDesc));
 
 	VertexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-	VertexBufferDesc.ByteWidth = sizeof(VertexType) * Vertices.size();
+	VertexBufferDesc.ByteWidth = sizeof(VertexType) * (UINT)Vertices.size();
 	VertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	VertexBufferDesc.CPUAccessFlags = 0;
 	VertexBufferDesc.MiscFlags = 0;
@@ -347,7 +356,7 @@ void Mesh::InitVertexBuffer(Microsoft::WRL::ComPtr<ID3D11Device1> Device, Micros
 	ZeroMemory(&IndexBufferDesc, sizeof(IndexBufferDesc));
 
 	IndexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-	IndexBufferDesc.ByteWidth = sizeof(DWORD) * Indices.size();
+	IndexBufferDesc.ByteWidth = sizeof(DWORD) * (UINT)Indices.size();
 	IndexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
 	IndexBufferDesc.CPUAccessFlags = 0;
 	IndexBufferDesc.MiscFlags = 0;

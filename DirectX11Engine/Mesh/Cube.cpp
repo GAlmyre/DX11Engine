@@ -7,8 +7,10 @@ Cube::Cube()
 	:Mesh()
 {
 	SetVerticesAndIndices();
-	TexturePath = L"Assets/Textures/DefaultTexture.png";
-	NormalMapPath = L"Assets/Textures/DefaultBump.png";
+	MaterialData NewMat;
+	NewMat.DiffuseColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	NewMat.SpecExp = 0;
+	SetMaterial(NewMat);
 }
 
 Cube::Cube(XMFLOAT3 Position, XMFLOAT3 Rotation, XMFLOAT3 Scale)
@@ -19,9 +21,12 @@ Cube::Cube(XMFLOAT3 Position, XMFLOAT3 Rotation, XMFLOAT3 Scale)
 	this->Rotation = Rotation;
 	this->Scale = Scale;
 
+	MaterialData NewMat;
+	NewMat.DiffuseColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	NewMat.SpecExp = 0;
+	SetMaterial(NewMat);
+
 	UpdateWorldMatrix();
-	TexturePath = L"Assets/Textures/DefaultTexture.png";
-	NormalMapPath = L"Assets/Textures/DefaultBump.png";
 }
 
 void Cube::SetVerticesAndIndices()

@@ -48,6 +48,8 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 {
     freopen("Log.txt", "w", stdout);
 
+    Logger::Log("Starting DirectXEngine.");
+
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
@@ -79,7 +81,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 
         if (!RegisterClassExW(&wcex))
             return 1;
-
+        
         // Create window
         int w, h;
         MainVideoRenderer->GetDefaultSize(w, h);
@@ -106,9 +108,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
         // TODO: Change nCmdShow to SW_SHOWMAXIMIZED to default to fullscreen.
 
         SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(MainVideoRenderer.get()) );
-
         GetClientRect(hwnd, &rc);
-
         MainVideoRenderer->Initialize(hwnd, rc.right - rc.left, rc.bottom - rc.top);
         MainAudioRenderer->Initialize();
     }
@@ -117,7 +117,6 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
     MSG msg = {};
     while (WM_QUIT != msg.message)
     {
-
         if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
         {
             TranslateMessage(&msg);
@@ -128,7 +127,6 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
             MainVideoRenderer->Tick();
         }
     }
-
     MainVideoRenderer.reset();
 
     CoUninitialize();

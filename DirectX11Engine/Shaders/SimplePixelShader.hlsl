@@ -1,15 +1,18 @@
-Texture2D Texture       : register(t0);
-Texture2D NormalMap     : register(t1);
-Texture2D SpecularMap   : register(t2);
+Texture2D Texture : register(t0);
+Texture2D NormalMap : register(t1);
+Texture2D SpecularMap : register(t2);
 
 SamplerState ObjectSamplerState;
 
 struct Material
 {
-    float3 AmbientColor;
-    float3 DiffuseColor;
-    float3 SpecularColor;
+    float4 AmbientColor;
+    float4 DiffuseColor;
+    float4 SpecularColor;
     float SpecExponent;
+    int bUseAlbedoTexture;
+    int bUseNormalMap;
+    int bUseSpecularMap;
 };
 
 struct PointLight
@@ -41,7 +44,6 @@ cbuffer cbPerFrame
 
 cbuffer cbPerObject
 {
-    // The directional light of our scene
     Material CurrentMaterial;
 };
 
@@ -58,16 +60,17 @@ struct PS_INPUT
 
 float3 AmbientLighting(float4 LightAmbient)
 {
-    return /*CurrentMaterial.AmbientColor **/ LightAmbient;
+    return /*CurrentMaterial.AmbientColor **/(float3) LightAmbient;
 }
 
-float3 DiffuseLighting(float3 N, float3 L, float4 LightDiffuse, float2 TexCoord)
+float3 DiffuseLighting(float3 N, float3 L, float4 LightDiffuse, float2 TexCoord, float3 PixelColor)
 {
     float DiffuseTerm = saturate(dot(N, L));
-	return Texture.Sample(ObjectSamplerState, TexCoord) * LightDiffuse * DiffuseTerm;
+    return PixelColor * (float3)LightDiffuse * DiffuseTerm;
+
 }
 
-float3 SpecularLighting(float3 N, float3 L, float3 V, float4 LightSpecular, float SpecularMapValue)
+float3 SpecularLighting(float3 N, float3 L, float3 V, float4 LightSpecular, float SpecularMapValue, float3 PixelColor)
 {
     float SpecularTerm = 0;
     
@@ -76,24 +79,24 @@ float3 SpecularLighting(float3 N, float3 L, float3 V, float4 LightSpecular, floa
         // half vector
         float3 H = normalize(L + V);
         // 64 = shininess
-        SpecularTerm = pow(clamp(dot(N, H), 0, 1), CurrentMaterial.SpecExponent);
+        SpecularTerm = pow(clamp(dot(N, H), 0, 1), SpecularMapValue);
     }
     
-    return LightSpecular * SpecularTerm /** SpecularMapValue*/;
+    return (float3)LightSpecular * SpecularTerm;
 }
 
-float3 CalculateDirectional(DirectionalLight Light, float3 Normal, float3 ViewDir, float2 TexCoord, float SpecularMapValue)
-{ 
+float3 CalculateDirectional(DirectionalLight Light, float3 Normal, float3 ViewDir, float2 TexCoord, float SpecularMapValue, float3 PixelColor)
+{
     float3 LightDir = normalize(-Light.Dir);
     
     float3 Ambient = AmbientLighting(Light.Ambient);
-    float3 Diffuse = DiffuseLighting(Normal, LightDir, Light.Diffuse, TexCoord);
-    float3 Specular = SpecularLighting(Normal, LightDir, ViewDir, Light.Specular, SpecularMapValue);
+    float3 Diffuse = DiffuseLighting(Normal, LightDir, Light.Diffuse, TexCoord, PixelColor);
+    float3 Specular = SpecularLighting(Normal, LightDir, ViewDir, Light.Specular, SpecularMapValue, PixelColor);
     
     return Ambient + Diffuse + Specular;
 }
 
-float3 CalculatePointLight(PointLight Light, float3 WorldPosition, float3 Normal, float3 ViewDir, float2 TexCoord, float SpecularMapValue)
+float3 CalculatePointLight(PointLight Light, float3 WorldPosition, float3 Normal, float3 ViewDir, float2 TexCoord, float SpecularMapValue, float3 PixelColor)
 {
     float3 LightDir = normalize(Light.Position - WorldPosition);
     float Distance = length(Light.Position - WorldPosition);
@@ -101,36 +104,62 @@ float3 CalculatePointLight(PointLight Light, float3 WorldPosition, float3 Normal
 
     
     float3 Ambient = AmbientLighting(Light.Ambient) * Attenuation;
-    float3 Diffuse = DiffuseLighting(Normal, LightDir, Light.Diffuse, TexCoord) * Attenuation;
-    float3 Specular = SpecularLighting(Normal, LightDir, ViewDir, Light.Specular, SpecularMapValue) * Attenuation;
+    float3 Diffuse = DiffuseLighting(Normal, LightDir, Light.Diffuse, TexCoord, PixelColor) * Attenuation;
+    float3 Specular = SpecularLighting(Normal, LightDir, ViewDir, Light.Specular, SpecularMapValue, PixelColor) * Attenuation;
     
     return Ambient + Diffuse + Specular;
 }
 
 float4 main(PS_INPUT input) : SV_TARGET
-{  
+{
     float3 V = normalize(CamPosition - input.WorldPos.xyz);
 
-    float4 TextureColor = Texture.Sample(ObjectSamplerState, input.TexCoord);
-    float SpecularMapValue = SpecularMap.Sample(ObjectSamplerState, input.TexCoord).x;  
-    
-    // Normal mapping
-    float4 BumpMap = NormalMap.Sample(ObjectSamplerState, input.TexCoord);
-    BumpMap = (BumpMap * 2.0f) - 1.0f;
-    float3 BumpNormal = (BumpMap.x * input.Tangent) + (BumpMap.y * input.Binormal) + (BumpMap.z * input.Normal);
-    BumpNormal = normalize(BumpNormal);
-    
-    // Uncomment to see without bumpmapping
-    BumpNormal = normalize(input.Normal);
-    
+    // Albedo mapping
+    float4 TextureColor;
+    if (CurrentMaterial.bUseAlbedoTexture == 0)
+    {
+        TextureColor = CurrentMaterial.DiffuseColor;
+    }
+    else
+    {
+        TextureColor = Texture.Sample(ObjectSamplerState, input.TexCoord);
+
+    }
+ 
+    // early abort if our alpha is too smal
     if (TextureColor.a < 0.01)
         discard;
     
-    float3 FinalColor = TextureColor * CalculateDirectional(Sun, BumpNormal, V, input.TexCoord, SpecularMapValue);
+    // Specular mapping
+    float SpecularMapValue;
+    if (CurrentMaterial.bUseSpecularMap == 0)
+    {
+        SpecularMapValue = CurrentMaterial.SpecExponent;
+    }
+    else
+    {
+        SpecularMapValue = SpecularMap.Sample(ObjectSamplerState, input.TexCoord).x;
+    }
+    
+    // Normal mapping
+    float3 BumpNormal;
+    if (CurrentMaterial.bUseNormalMap == 0)
+    {
+        BumpNormal = normalize(input.Normal);
+    }
+    else
+    {
+        float4 BumpMap = NormalMap.Sample(ObjectSamplerState, input.TexCoord);
+        BumpMap = (BumpMap * 2.0f) - 1.0f;
+        BumpNormal = (BumpMap.x * input.Tangent) + (BumpMap.y * input.Binormal) + (BumpMap.z * input.Normal);
+        BumpNormal = normalize(BumpNormal);
+    }
+    
+    float3 FinalColor = (float3) TextureColor * CalculateDirectional(Sun, BumpNormal, V, input.TexCoord, SpecularMapValue, (float3) TextureColor);
     
     for (int i = 0; i < LightsCount; i++)
     {
-        FinalColor += TextureColor * CalculatePointLight(Lights[i], input.WorldPos.xyz, BumpNormal, V, input.TexCoord, SpecularMapValue);
+        FinalColor += (float3) TextureColor * CalculatePointLight(Lights[i], input.WorldPos.xyz, BumpNormal, V, input.TexCoord, SpecularMapValue, (float3) TextureColor);
     }
     
     return float4(saturate(FinalColor), 1.0f);

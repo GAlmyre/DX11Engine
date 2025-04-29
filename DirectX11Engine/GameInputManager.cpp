@@ -101,11 +101,11 @@ void GameInputManager::HandleMouse()
 	{
 		if (MouseState.x != LastX)
 		{
-			RotateYaw((LastX + MouseState.x) * 0.015);
+			RotateYaw((LastX + MouseState.x) * 0.015f);
 		}
 		if (MouseState.y != LastY)
 		{
-			RotatePitch((LastY + MouseState.y) * 0.015);
+			RotatePitch((LastY + MouseState.y) * 0.015f);
 		}
 
 		LastX = Mouse->GetState().x;

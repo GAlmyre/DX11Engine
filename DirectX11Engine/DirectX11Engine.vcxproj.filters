@@ -99,6 +99,9 @@
       <Filter>Audio</Filter>
     </ClInclude>
     <ClInclude Include="WasapiAudioRenderer.h" />
+    <ClInclude Include="Logger.h">
+      <Filter>Core</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp">
@@ -162,6 +165,9 @@
       <Filter>Audio</Filter>
     </ClCompile>
     <ClCompile Include="WasapiAudioRenderer.cpp" />
+    <ClCompile Include="Logger.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />

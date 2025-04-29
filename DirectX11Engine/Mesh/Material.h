@@ -4,13 +4,15 @@
 struct MaterialData
 {
 	// Ambient Color
-	DirectX::XMFLOAT3 AmbientColor = DirectX::XMFLOAT3(1,1,1);
-	float PadAmbient;
+	DirectX::XMFLOAT4 AmbientColor = DirectX::XMFLOAT4(1, 1, 1, 1);
 	// Diffuse Color
-	DirectX::XMFLOAT3 DiffuseColor = DirectX::XMFLOAT3(.3, .2, .2);
-	float PadDiffuse;
+	DirectX::XMFLOAT4 DiffuseColor = DirectX::XMFLOAT4(.3, .2, .2, 1);
 	// Specular Color
-	DirectX::XMFLOAT3 SpecularColor = DirectX::XMFLOAT3(1, 0, 0);
+	DirectX::XMFLOAT4 SpecularColor = DirectX::XMFLOAT4(1, 0, 0, 1);
 	// Specular Exponent
-	float SpecExp = 64.0f;
+	float SpecExp = 32.0f;
+
+	int bUseAlbedoTexture = 0;
+	int bUseNormalMap = 0;
+	int bUseSpecularMap = 0;
 };

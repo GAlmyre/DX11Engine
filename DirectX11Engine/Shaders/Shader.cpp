@@ -17,10 +17,9 @@ Shader::Shader(LPCWSTR Path, EShaderType InShaderType, Microsoft::WRL::ComPtr<ID
 	default:
 		break;
 	}
-
 	
 	ID3DBlob* ShaderErrorMessage = nullptr;
-	HRESULT hr = D3DCompileFromFile(Path, nullptr, nullptr, "main", ShaderTypeString, 0, 0, ShaderBuffer.ReleaseAndGetAddressOf(), nullptr);
+	HRESULT hr = D3DCompileFromFile(Path, nullptr, nullptr, "main", ShaderTypeString, D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION, 0, ShaderBuffer.ReleaseAndGetAddressOf(), nullptr);
 	if (FAILED(hr))
 	{
 		const char* errorMsg = (const char*)ShaderErrorMessage->GetBufferPointer();

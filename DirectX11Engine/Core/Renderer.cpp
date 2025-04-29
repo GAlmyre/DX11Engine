@@ -46,10 +46,9 @@ void Renderer::Initialize(HWND window, int width, int height)
     OutputHeight = std::max(height, 1);
 
     CreateDevice();
-
     CreateResources();
-
-	IMGUI_CHECKVERSION();
+	
+    IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO();
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
@@ -80,7 +79,6 @@ void Renderer::Tick()
     {
         InputManager->Update();       
     });
-
     Update(Timer);
 
     Render();
@@ -92,8 +90,6 @@ void Renderer::Update(DX::StepTimer const& timer)
     float elapsedTime = float(timer.GetElapsedSeconds());
 
     FrameTime = elapsedTime;
-
-    
 }
 
 // Draws the scene.
@@ -106,8 +102,6 @@ void Renderer::Render()
     }
 
     DrawGui();
-
-
     Clear();
 
 	// Clear the views
@@ -144,31 +138,52 @@ void Renderer::Render()
     // LightingPass
 
     // Draw each mesh of the scene
-    for (Mesh* Mesh : Meshes)
+    switch (RenderingType)
+    {
+    case ERenderingType::Lit:
+        DrawLit();
+    	break;
+	case ERenderingType::Unlit:
+        DrawUnlit();
+		break;
+	case ERenderingType::Normal:
+        DrawLit();
+		break;
+    }
+
+	ImGui::Render();
+	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+    Present();
+}
+
+void Renderer::DrawLit()
+{
+	PerFrameBuffStruct_PS.Sun = Sun->GetLightData();
+	if (!bToggleDirectional)
+	{
+		PerFrameBuffStruct_PS.Sun.AmbientColor = DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
+		PerFrameBuffStruct_PS.Sun.DiffuseColor = DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
+		PerFrameBuffStruct_PS.Sun.SpecularColor = DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
+	}
+
+	for (int i = 0; i < MAX_LIGHTS && i < Lights.size(); ++i)
+	{
+		PerFrameBuffStruct_PS.PointLights[i] = Lights[i]->Light->GetLightData();
+	}
+
+	XMFLOAT3 CamPos{};
+	XMStoreFloat3(&CamPos, SceneCamera->GetPosition());
+	PerFrameBuffStruct_PS.CameraPosition = CamPos;
+	PerFrameBuffStruct_PS.LightsCount = Lights.size();
+
+	for (Mesh* Mesh : Meshes)
 	{
 		WorldViewProj = Mesh->GetWorldMatrix() * SceneCamera->GetViewMatrix() * SceneCamera->GetProjectionMatrix();
 
 		PerObjectBuffStruct_VS.WorldViewProj = XMMatrixTranspose(WorldViewProj);
-        PerObjectBuffStruct_VS.World = XMMatrixTranspose(Mesh->GetWorldMatrix());
+		PerObjectBuffStruct_VS.World = XMMatrixTranspose(Mesh->GetWorldMatrix());
 
-		PerFrameBuffStruct_PS.Sun = Sun->GetLightData();
-		if (!bToggleDirectional)
-		{
-			PerFrameBuffStruct_PS.Sun.AmbientColor = DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
-			PerFrameBuffStruct_PS.Sun.DiffuseColor = DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
-			PerFrameBuffStruct_PS.Sun.SpecularColor = DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
-		}
-
-		for (int i = 0; i < MAX_LIGHTS && i < Lights.size(); ++i)
-		{
-			   PerFrameBuffStruct_PS.PointLights[i] = Lights[i]->Light->GetLightData();
-		}
-        PerObjectBuffStruct_PS.Mat = Mesh->Material;
-
-		XMFLOAT3 CamPos{};
-		XMStoreFloat3(&CamPos, SceneCamera->GetPosition());
-		PerFrameBuffStruct_PS.CameraPosition = CamPos;
-        PerFrameBuffStruct_PS.LightsCount = Lights.size();
+		PerObjectBuffStruct_PS.Mat = Mesh->Material;
 
 		D3dContext->UpdateSubresource(PerFrameBuffer_PS.Get(), 0, nullptr, &PerFrameBuffStruct_PS, 0, 0);
 		D3dContext->PSSetConstantBuffers(0, 1, PerFrameBuffer_PS.GetAddressOf());
@@ -178,46 +193,78 @@ void Renderer::Render()
 
 		D3dContext->UpdateSubresource(PerObjectBuffer_VS.Get(), 0, nullptr, &PerObjectBuffStruct_VS, 0, 0);
 		D3dContext->VSSetConstantBuffers(0, 1, PerObjectBuffer_VS.GetAddressOf());
-		
+
 		Mesh->Draw(D3dContext);
-    }
-    if (bDrawLightEmitters)
-    {
+	}
+	if (bDrawLightEmitters)
+	{
 		// Draw meshes for the lights
 		for (LightAndMesh* CurrentLight : Lights)
 		{
 			D3dContext->PSSetShader(UnlitPixelShader->GetPixelShaderRef().Get(), 0, 0);
 
-            CurrentLight->LightMesh->InitMesh(D3dDevice, D3dContext);
 			WorldViewProj = CurrentLight->LightMesh->GetWorldMatrix() * SceneCamera->GetViewMatrix() * SceneCamera->GetProjectionMatrix();
-
 			PerObjectBuffStruct_VS.WorldViewProj = XMMatrixTranspose(WorldViewProj);
 			PerObjectBuffStruct_VS.World = XMMatrixTranspose(CurrentLight->LightMesh->GetWorldMatrix());
 
-			PerFrameBuffStruct_PS.Sun = Sun->GetLightData();
+			CurrentLight->LightMesh->InitMesh(D3dDevice, D3dContext);
 
-			XMFLOAT3 CamPos{};
-			XMStoreFloat3(&CamPos, SceneCamera->GetPosition());
-			PerFrameBuffStruct_PS.CameraPosition = CamPos;
-			PerFrameBuffStruct_PS.LightsCount = Lights.size();
-
-			D3dContext->UpdateSubresource(PerFrameBuffer_PS.Get(), 0, nullptr, &PerFrameBuffStruct_PS, 0, 0);
-			D3dContext->PSSetConstantBuffers(0, 1, PerFrameBuffer_PS.GetAddressOf());
+			PerObjectBuffStruct_PS.Mat = CurrentLight->LightMesh->Material;
 
 			D3dContext->UpdateSubresource(PerObjectBuffer_PS.Get(), 0, nullptr, &PerObjectBuffStruct_PS, 0, 0);
-			D3dContext->PSSetConstantBuffers(1, 1, PerObjectBuffer_PS.GetAddressOf());
+			D3dContext->PSSetConstantBuffers(0, 1, PerObjectBuffer_PS.GetAddressOf());
 
 			D3dContext->UpdateSubresource(PerObjectBuffer_VS.Get(), 0, nullptr, &PerObjectBuffStruct_VS, 0, 0);
 			D3dContext->VSSetConstantBuffers(0, 1, PerObjectBuffer_VS.GetAddressOf());
 
-            CurrentLight->LightMesh->Draw(D3dContext);
+			CurrentLight->LightMesh->Draw(D3dContext);
 		}
-    }   
+	}
+}
 
-	ImGui::Render();
-	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+void Renderer::DrawUnlit()
+{
+	for (Mesh* Mesh : Meshes)
+	{
+		WorldViewProj = Mesh->GetWorldMatrix() * SceneCamera->GetViewMatrix() * SceneCamera->GetProjectionMatrix();
 
-    Present();
+		PerObjectBuffStruct_VS.WorldViewProj = XMMatrixTranspose(WorldViewProj);
+		PerObjectBuffStruct_VS.World = XMMatrixTranspose(Mesh->GetWorldMatrix());
+
+		PerObjectBuffStruct_PS.Mat = Mesh->Material;
+
+		D3dContext->UpdateSubresource(PerObjectBuffer_PS.Get(), 0, nullptr, &PerObjectBuffStruct_PS, 0, 0);
+		D3dContext->PSSetConstantBuffers(0, 1, PerObjectBuffer_PS.GetAddressOf());
+
+		D3dContext->UpdateSubresource(PerObjectBuffer_VS.Get(), 0, nullptr, &PerObjectBuffStruct_VS, 0, 0);
+		D3dContext->VSSetConstantBuffers(0, 1, PerObjectBuffer_VS.GetAddressOf());
+
+		Mesh->Draw(D3dContext);
+	}
+	if (bDrawLightEmitters)
+	{
+		// Draw meshes for the lights
+		for (LightAndMesh* CurrentLight : Lights)
+		{
+			D3dContext->PSSetShader(UnlitPixelShader->GetPixelShaderRef().Get(), 0, 0);
+
+			WorldViewProj = CurrentLight->LightMesh->GetWorldMatrix() * SceneCamera->GetViewMatrix() * SceneCamera->GetProjectionMatrix();
+			PerObjectBuffStruct_VS.WorldViewProj = XMMatrixTranspose(WorldViewProj);
+			PerObjectBuffStruct_VS.World = XMMatrixTranspose(CurrentLight->LightMesh->GetWorldMatrix());
+
+			CurrentLight->LightMesh->InitMesh(D3dDevice, D3dContext);
+
+			PerObjectBuffStruct_PS.Mat = CurrentLight->LightMesh->Material;
+
+			D3dContext->UpdateSubresource(PerObjectBuffer_PS.Get(), 0, nullptr, &PerObjectBuffStruct_PS, 0, 0);
+			D3dContext->PSSetConstantBuffers(0, 1, PerObjectBuffer_PS.GetAddressOf());
+
+			D3dContext->UpdateSubresource(PerObjectBuffer_VS.Get(), 0, nullptr, &PerObjectBuffStruct_VS, 0, 0);
+			D3dContext->VSSetConstantBuffers(0, 1, PerObjectBuffer_VS.GetAddressOf());
+
+			CurrentLight->LightMesh->Draw(D3dContext);
+		}
+	}
 }
 
 void Renderer::DrawGui()
@@ -226,34 +273,40 @@ void Renderer::DrawGui()
 	ImGui_ImplDX11_NewFrame();
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
+	
 
     ImGui::Begin("Settings");
-
 	if (ImGui::Button("Open"))
 		OpenModel();
 
     ImGui::SliderFloat("Camera Speed", &SceneCamera->Speed, 0.1f, 50.0f);
-	static float SunDiffuseColor[3] = { Sun->DiffuseColor.x, Sun->DiffuseColor.y, Sun->DiffuseColor.z };
-    static float SunAmbientColor[3] = { Sun->AmbientColor.x, Sun->AmbientColor.y, Sun->AmbientColor.z };
-    static float SunSpecularColor[3] = { Sun->SpecularColor.x, Sun->SpecularColor.y, Sun->SpecularColor.z };
-    static float SunDirection[3] = { Sun->GetRotation().x, Sun->GetRotation().y, Sun->GetRotation().z };
 
-    if (ImGui::CollapsingHeader("Directional"))
+    if (Sun)
     {
-		if (ImGui::Button("Toggle Directional"))
-			bToggleDirectional = !bToggleDirectional;
+		float SunDiffuseColor[3] = { Sun->DiffuseColor.x, Sun->DiffuseColor.y, Sun->DiffuseColor.z };
 
-		ImGui::ColorEdit3("Diffuse", SunDiffuseColor);
-		Sun->DiffuseColor = XMFLOAT4(SunDiffuseColor[0], SunDiffuseColor[1], SunDiffuseColor[2], 1.0f);
+		float SunAmbientColor[3] = { Sun->AmbientColor.x, Sun->AmbientColor.y, Sun->AmbientColor.z };
+		float SunSpecularColor[3] = { Sun->SpecularColor.x, Sun->SpecularColor.y, Sun->SpecularColor.z };
+		float SunDirection[3] = { Sun->GetRotation().x, Sun->GetRotation().y, Sun->GetRotation().z };
 
-		ImGui::ColorEdit3("Ambient", SunAmbientColor);
-		Sun->AmbientColor = XMFLOAT4(SunAmbientColor[0], SunAmbientColor[1], SunAmbientColor[2], 1.0f);
 
-		ImGui::ColorEdit3("Specular", SunSpecularColor);
-		Sun->SpecularColor = XMFLOAT4(SunSpecularColor[0], SunSpecularColor[1], SunSpecularColor[2], 1.0f);
+		if (ImGui::CollapsingHeader("Directional"))
+		{
+			if (ImGui::Button("Toggle Directional"))
+				bToggleDirectional = !bToggleDirectional;
 
-		ImGui::SliderFloat3("Direction", SunDirection, -180.0f, 180.0f);
-		Sun->SetRotation(XMFLOAT3(SunDirection[0], SunDirection[1], SunDirection[2]));
+			ImGui::ColorEdit3("Diffuse", SunDiffuseColor);
+			Sun->DiffuseColor = XMFLOAT4(SunDiffuseColor[0], SunDiffuseColor[1], SunDiffuseColor[2], 1.0f);
+
+			ImGui::ColorEdit3("Ambient", SunAmbientColor);
+			Sun->AmbientColor = XMFLOAT4(SunAmbientColor[0], SunAmbientColor[1], SunAmbientColor[2], 1.0f);
+
+			ImGui::ColorEdit3("Specular", SunSpecularColor);
+			Sun->SpecularColor = XMFLOAT4(SunSpecularColor[0], SunSpecularColor[1], SunSpecularColor[2], 1.0f);
+
+			ImGui::SliderFloat3("Direction", SunDirection, -180.0f, 180.0f);
+			Sun->SetRotation(XMFLOAT3(SunDirection[0], SunDirection[1], SunDirection[2]));
+		}
     }
 
     // Handle the point lights
@@ -277,17 +330,30 @@ void Renderer::DrawGui()
 
     ImGui::Text("View");
     if (ImGui::Button("Lit"))
+    {
         CurrentPixelShader = PixelShader;
+        RenderingType = ERenderingType::Lit;
+    }
+
     ImGui::SameLine();
     if (ImGui::Button("Unlit"))
+    {
         CurrentPixelShader = UnlitPixelShader;
+        RenderingType = ERenderingType::Unlit;
+    }
+    
     ImGui::SameLine();
     if (ImGui::Button("Normal"))
+    {
         CurrentPixelShader = NormalPixelShader;
+        RenderingType = ERenderingType::Normal;
+    }   
 
-	if (ImGui::Button("Toggle Light Emitters"))
-		bDrawLightEmitters = !bDrawLightEmitters;
-        
+    if (ImGui::Button("Toggle Light Emitters"))
+    {
+        bDrawLightEmitters = !bDrawLightEmitters;
+    }
+		     
     //ImGui::ShowDemoWindow();
 
     ImGui::Text("FrameTime %.3f ms/frame (%.1f FPS)", FrameTime, 1000.0 / FrameTime);
@@ -374,15 +440,15 @@ void Renderer::GetDefaultSize(int& width, int& height) const noexcept
 
 void Renderer::LoadNewModel(std::wstring Path)
 {
+    Logger::Log(std::string("Opening model : ") + std::string(Path.begin(), Path.end()));
+
     SceneCamera->SetPosition(XMVectorSet(0.0f, 5.0f, -7.0f, 0.0f));
 
     // load a mesh  
     wchar_t Dir[_MAX_DIR];
     wchar_t Dump[_MAX_PATH];
-
     _wsplitpath_s(Path.c_str(), Dump, Dir, Dump, Dump);
     Meshes.clear();
-
 	Assimp::Importer Importer;
 
 	const aiScene* Scene = Importer.ReadFile(DX::WStringToString(Path), aiProcess_CalcTangentSpace |
@@ -410,6 +476,10 @@ void Renderer::LoadNewModel(std::wstring Path)
 		}
 
         //AddPointLight(XMFLOAT3(-10.0, 10.0, -10.0), XMFLOAT4(1.f, 1.f, 1.f, 1.0f), XMFLOAT4(1.f, 1.f, 1.f, 1.0f));		
+    }
+    else
+    {
+        Logger::Log("Scene Failed to load", LogSeverity::Error);
     }
 }
 
@@ -565,7 +635,6 @@ void Renderer::CreateDevice()
 	};
 	UINT LayoutNum = ARRAYSIZE(Layout);
 	DX::ThrowIfFailed(device->CreateInputLayout(Layout, LayoutNum, VertexShader->ShaderBuffer->GetBufferPointer(), VertexShader->ShaderBuffer->GetBufferSize(), InputLayout.GetAddressOf()));
-
     // Create the lights
     //Lights.push_back(Light);
 
@@ -819,13 +888,13 @@ void Renderer::OpenModel()
 				// Display the file name to the user.
 				if (SUCCEEDED(hr))
 				{
-					LPWSTR CurrentDirStr = new TCHAR[1024];
-					GetCurrentDirectory(1024, CurrentDirStr);
-					std::wstring PathStr = Path;
-					PathStr.erase(0, wcslen(CurrentDirStr) + 1);
-					Path = &PathStr[0];
+					//LPWSTR CurrentDirStr = new TCHAR[1024];
+					//GetCurrentDirectory(1024, CurrentDirStr);
+					//std::wstring PathStr = Path;
+					//PathStr.erase(0, wcslen(CurrentDirStr) + 1);
+					//Path = &PathStr[0];
 
-					LoadNewModel(PathStr);
+					LoadNewModel(Path);
 				}
 				pItem->Release();
 			}

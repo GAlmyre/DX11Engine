@@ -12,6 +12,13 @@
 class Shader;
 class Mesh;
 
+enum class ERenderingType
+{
+    Lit, 
+    Unlit,
+    Normal
+};
+
 struct ConstantBufferPerFrame_PS
 {
     DirectionalLightData Sun = DirectionalLightData();
@@ -110,6 +117,9 @@ private:
     void Update(DX::StepTimer const& timer);
     void Render();
 
+    void DrawLit();
+    void DrawUnlit();
+
     void DrawGui();
 
     void Clear();
@@ -178,4 +188,6 @@ private:
     std::unique_ptr<DirectX::SpriteBatch> Batch;
 
     float FrameTime;
+
+    ERenderingType RenderingType = ERenderingType::Lit;
 };

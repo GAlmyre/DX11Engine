@@ -52,7 +52,7 @@ public:
 	}
 	XMVECTOR GetRightVector();
 
-	float Speed = 3.0f;
+	float Speed = 6.0f;
 
 private:
 	// Camera coordinates
