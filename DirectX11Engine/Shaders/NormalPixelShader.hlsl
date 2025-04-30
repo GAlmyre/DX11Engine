@@ -1,44 +1,21 @@
-Texture2D Texture;
+Texture2D Texture : register(t0);
+Texture2D NormalMap : register(t1);
+Texture2D SpecularMap : register(t2);
 SamplerState ObjectSamplerState;
 
 struct Material
 {
-    float3 AmbientColor;
-    float3 DiffuseColor;
-    float3 SpecularColor;
+    float4 AmbientColor;
+    float4 DiffuseColor;
+    float4 SpecularColor;
     float SpecExponent;
-};
-
-struct PointLight
-{
-    float3 Position;
-    float4 Ambient;
-    float4 Diffuse;
-    float4 Specular;
-    float3 Attenuation;
-    float Range;
-};
-
-struct DirectionalLight
-{
-    float4 Ambient;
-    float4 Diffuse;
-    float4 Specular;
-    float3 Dir;
-};
-
-cbuffer cbPerFrame
-{
-    // The directional light of our scene
-    DirectionalLight Sun;
-    PointLight Light;
-    float3 CamPosition;
-    float LightsCount;
+    int bUseAlbedoTexture;
+    int bUseNormalMap;
+    int bUseSpecularMap;
 };
 
 cbuffer cbPerObject
 {
-    // The directional light of our scene
     Material CurrentMaterial;
 };
 
@@ -55,8 +32,19 @@ struct PS_INPUT
 
 float4 main(PS_INPUT input) : SV_TARGET
 {  
-    float3 RemappedNormal = (input.Normal * 0.5) + 0.5;
-
-    float3 FinalColor = RemappedNormal;
-    return float4(saturate(FinalColor), 1.0f);    
+    float3 BumpNormal;
+    if (CurrentMaterial.bUseNormalMap == 0)
+    {
+        BumpNormal = normalize(input.Normal);
+    }
+    else
+    {
+        float4 BumpMap = NormalMap.Sample(ObjectSamplerState, input.TexCoord);
+        BumpMap = (BumpMap * 2.0f) - 1.0f;
+        BumpNormal = (BumpMap.x * input.Tangent) + (BumpMap.y * input.Binormal) + (BumpMap.z * input.Normal);
+        BumpNormal = normalize(BumpNormal);
+    }
+    float3 RemappedNormal = (BumpNormal * 0.5) + 0.5;
+    
+    return float4(RemappedNormal, 1.0f);
 }

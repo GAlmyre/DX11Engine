@@ -147,7 +147,10 @@ void Renderer::Render()
         DrawUnlit();
 		break;
 	case ERenderingType::Normal:
-        DrawLit();
+        DrawNormals(false);
+		break;
+	case ERenderingType::NormalWithMaps:
+        DrawNormals(true);
 		break;
     }
 
@@ -166,7 +169,7 @@ void Renderer::DrawLit()
 		PerFrameBuffStruct_PS.Sun.SpecularColor = DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
 	}
 
-	for (int i = 0; i < MAX_LIGHTS && i < Lights.size(); ++i)
+	for (int i = 0; i < MAX_LIGHTS && i < (int)Lights.size(); ++i)
 	{
 		PerFrameBuffStruct_PS.PointLights[i] = Lights[i]->Light->GetLightData();
 	}
@@ -174,7 +177,7 @@ void Renderer::DrawLit()
 	XMFLOAT3 CamPos{};
 	XMStoreFloat3(&CamPos, SceneCamera->GetPosition());
 	PerFrameBuffStruct_PS.CameraPosition = CamPos;
-	PerFrameBuffStruct_PS.LightsCount = Lights.size();
+	PerFrameBuffStruct_PS.LightsCount = (int)Lights.size();
 
 	for (Mesh* Mesh : Meshes)
 	{
@@ -232,6 +235,55 @@ void Renderer::DrawUnlit()
 		PerObjectBuffStruct_VS.World = XMMatrixTranspose(Mesh->GetWorldMatrix());
 
 		PerObjectBuffStruct_PS.Mat = Mesh->Material;
+
+		D3dContext->UpdateSubresource(PerObjectBuffer_PS.Get(), 0, nullptr, &PerObjectBuffStruct_PS, 0, 0);
+		D3dContext->PSSetConstantBuffers(0, 1, PerObjectBuffer_PS.GetAddressOf());
+
+		D3dContext->UpdateSubresource(PerObjectBuffer_VS.Get(), 0, nullptr, &PerObjectBuffStruct_VS, 0, 0);
+		D3dContext->VSSetConstantBuffers(0, 1, PerObjectBuffer_VS.GetAddressOf());
+
+		Mesh->Draw(D3dContext);
+	}
+	if (bDrawLightEmitters)
+	{
+		// Draw meshes for the lights
+		for (LightAndMesh* CurrentLight : Lights)
+		{
+			D3dContext->PSSetShader(UnlitPixelShader->GetPixelShaderRef().Get(), 0, 0);
+
+			WorldViewProj = CurrentLight->LightMesh->GetWorldMatrix() * SceneCamera->GetViewMatrix() * SceneCamera->GetProjectionMatrix();
+			PerObjectBuffStruct_VS.WorldViewProj = XMMatrixTranspose(WorldViewProj);
+			PerObjectBuffStruct_VS.World = XMMatrixTranspose(CurrentLight->LightMesh->GetWorldMatrix());
+
+			CurrentLight->LightMesh->InitMesh(D3dDevice, D3dContext);
+
+			PerObjectBuffStruct_PS.Mat = CurrentLight->LightMesh->Material;
+
+			D3dContext->UpdateSubresource(PerObjectBuffer_PS.Get(), 0, nullptr, &PerObjectBuffStruct_PS, 0, 0);
+			D3dContext->PSSetConstantBuffers(0, 1, PerObjectBuffer_PS.GetAddressOf());
+
+			D3dContext->UpdateSubresource(PerObjectBuffer_VS.Get(), 0, nullptr, &PerObjectBuffStruct_VS, 0, 0);
+			D3dContext->VSSetConstantBuffers(0, 1, PerObjectBuffer_VS.GetAddressOf());
+
+			CurrentLight->LightMesh->Draw(D3dContext);
+		}
+	}
+}
+
+void Renderer::DrawNormals(bool bWithMaps)
+{
+	for (Mesh* Mesh : Meshes)
+	{
+		WorldViewProj = Mesh->GetWorldMatrix() * SceneCamera->GetViewMatrix() * SceneCamera->GetProjectionMatrix();
+
+		PerObjectBuffStruct_VS.WorldViewProj = XMMatrixTranspose(WorldViewProj);
+		PerObjectBuffStruct_VS.World = XMMatrixTranspose(Mesh->GetWorldMatrix());
+
+		PerObjectBuffStruct_PS.Mat = Mesh->Material;
+        if (!bWithMaps)
+        {
+            PerObjectBuffStruct_PS.Mat.bUseNormalMap = false;
+        }
 
 		D3dContext->UpdateSubresource(PerObjectBuffer_PS.Get(), 0, nullptr, &PerObjectBuffStruct_PS, 0, 0);
 		D3dContext->PSSetConstantBuffers(0, 1, PerObjectBuffer_PS.GetAddressOf());
@@ -328,30 +380,40 @@ void Renderer::DrawGui()
 		}
     }
 
-    ImGui::Text("View");
-    if (ImGui::Button("Lit"))
-    {
-        CurrentPixelShader = PixelShader;
-        RenderingType = ERenderingType::Lit;
-    }
+	if (ImGui::Button("Toggle Light Emitters"))
+	{
+		bDrawLightEmitters = !bDrawLightEmitters;
+	}
 
-    ImGui::SameLine();
-    if (ImGui::Button("Unlit"))
+    if (ImGui::CollapsingHeader("View modes", ImGuiTreeNodeFlags_DefaultOpen))
     {
-        CurrentPixelShader = UnlitPixelShader;
-        RenderingType = ERenderingType::Unlit;
-    }
-    
-    ImGui::SameLine();
-    if (ImGui::Button("Normal"))
-    {
-        CurrentPixelShader = NormalPixelShader;
-        RenderingType = ERenderingType::Normal;
-    }   
+		ImGui::Text("View");
+		if (ImGui::Button("Lit"))
+		{
+			CurrentPixelShader = PixelShader;
+			RenderingType = ERenderingType::Lit;
+		}
 
-    if (ImGui::Button("Toggle Light Emitters"))
-    {
-        bDrawLightEmitters = !bDrawLightEmitters;
+		ImGui::SameLine();
+		if (ImGui::Button("Unlit"))
+		{
+			CurrentPixelShader = UnlitPixelShader;
+			RenderingType = ERenderingType::Unlit;
+		}
+
+		ImGui::SameLine();
+		if (ImGui::Button("Normal"))
+		{
+			CurrentPixelShader = NormalPixelShader;
+			RenderingType = ERenderingType::Normal;
+		}
+
+		ImGui::SameLine();
+		if (ImGui::Button("Normal with maps"))
+		{
+			CurrentPixelShader = NormalPixelShader;
+			RenderingType = ERenderingType::NormalWithMaps;
+		}
     }
 		     
     //ImGui::ShowDemoWindow();
@@ -440,7 +502,7 @@ void Renderer::GetDefaultSize(int& width, int& height) const noexcept
 
 void Renderer::LoadNewModel(std::wstring Path)
 {
-    Logger::Log(std::string("Opening model : ") + std::string(Path.begin(), Path.end()));
+    Logger::Log(std::string("Opening model : ") + DX::WStringToString(Path));
 
     SceneCamera->SetPosition(XMVectorSet(0.0f, 5.0f, -7.0f, 0.0f));
 
@@ -740,7 +802,7 @@ void Renderer::CreateResources()
     DX::ThrowIfFailed(D3dDevice->CreateDepthStencilView(depthStencil.Get(), &depthStencilViewDesc, DepthStencilView.ReleaseAndGetAddressOf()));
 
     // TODO: Initialize windows-size dependent objects here.
-    SceneCamera->UpdateProjectionMatrix(OutputWidth, OutputHeight);
+    SceneCamera->UpdateProjectionMatrix((float)OutputWidth, (float)OutputHeight);
 
     // Set Blend State
     D3D11_BLEND_DESC1 BlendStateDesc;

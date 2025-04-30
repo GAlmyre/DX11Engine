@@ -39,7 +39,7 @@ cbuffer cbPerFrame
     DirectionalLight Sun;
     PointLight Lights[5];
     float3 CamPosition;
-    float LightsCount;
+    int LightsCount;
 };
 
 cbuffer cbPerObject

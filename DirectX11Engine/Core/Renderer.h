@@ -16,7 +16,8 @@ enum class ERenderingType
 {
     Lit, 
     Unlit,
-    Normal
+    Normal,
+    NormalWithMaps
 };
 
 struct ConstantBufferPerFrame_PS
@@ -24,7 +25,7 @@ struct ConstantBufferPerFrame_PS
     DirectionalLightData Sun = DirectionalLightData();
     PointLightData PointLights[MAX_LIGHTS];
     DirectX::XMFLOAT3 CameraPosition = DirectX::XMFLOAT3();
-    float LightsCount = 0;
+    int LightsCount = 0;
    
 };
 
@@ -119,6 +120,7 @@ private:
 
     void DrawLit();
     void DrawUnlit();
+    void DrawNormals(bool bWithMaps);
 
     void DrawGui();
 
