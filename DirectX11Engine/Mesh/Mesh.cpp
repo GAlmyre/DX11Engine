@@ -17,22 +17,11 @@ Mesh::Mesh(std::vector<VertexType> Vertices, std::vector<DWORD> Indices)
 {
 	this->Vertices = Vertices;
 	this->Indices = Indices;
-	//TexturePath = L"Assets/Textures/DefaultTexture.png";
-	//NormalMapPath = L"Assets/Textures/DefaultBump.png";
 	SetWorldMatrix(XMMatrixIdentity());
 }
 
 Mesh::Mesh(aiMesh* AssimpMesh, const aiNode* Node, const aiScene* Scene, const std::wstring& ContainingFolder)
 {
-	//XMMATRIX NewWorldMatrix = XMMATRIX(	Node->mTransformation.a1, Node->mTransformation.b1, Node->mTransformation.c1, Node->mTransformation.d1,
-	//									Node->mTransformation.a2, Node->mTransformation.b2, Node->mTransformation.c2, Node->mTransformation.d2,
-	//									Node->mTransformation.a3, Node->mTransformation.b3, Node->mTransformation.c3, Node->mTransformation.d3,
-	//									Node->mTransformation.a4, Node->mTransformation.b4, Node->mTransformation.c4, Node->mTransformation.d4);
-	//
-	//
-
-	//SetWorldMatrix(NewWorldMatrix);
-
 	aiVector3D NewPosition, NewRotation, NewScale;
 	Node->mTransformation.Decompose(NewScale, NewRotation, NewPosition);
 	SetPosition(XMFLOAT3(NewPosition.x, NewPosition.y, NewPosition.z));

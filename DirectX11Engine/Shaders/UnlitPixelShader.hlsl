@@ -27,20 +27,22 @@ struct PS_INPUT
     float3 Tangent : TANGENT;
     float3 Binormal : BINORMAL;
     float2 TexCoord : TEXCOORD;
-    float2 ReturnTex : RETTEX;
 };
 
 float4 main(PS_INPUT input) : SV_TARGET
 {  
-    float3 FinalColor;
+    float4 FinalColor;
     if (CurrentMaterial.bUseAlbedoTexture == 0)
     {
-        FinalColor = (float3)CurrentMaterial.DiffuseColor;
+        FinalColor = CurrentMaterial.DiffuseColor;
     }
     else
     {
-        FinalColor = (float3)Texture.Sample(ObjectSamplerState, input.TexCoord);
+        FinalColor = Texture.Sample(ObjectSamplerState, input.TexCoord);
     }
+    
+    if (FinalColor.a < 0.01)
+        discard;
         
-    return float4(saturate(FinalColor), 1.0f);    
+    return float4(saturate(FinalColor));    
 }

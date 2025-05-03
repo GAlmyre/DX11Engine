@@ -38,6 +38,8 @@ struct ConstantBufferPerObject_VS
 {
     DirectX::XMMATRIX WorldViewProj;
     DirectX::XMMATRIX World;
+    DirectX::XMMATRIX LightWorldViewProj;
+    //DirectX::XMFLOAT4 LightPos;
 };
 
 struct LightAndMesh
@@ -100,6 +102,9 @@ public:
     Shader* UnlitPixelShader = nullptr;
     Shader* NormalPixelShader = nullptr;
 
+	Shader* ShadowMapVS = nullptr;
+	Shader* ShadowMapPS = nullptr;
+
     Shader* CurrentPixelShader = nullptr;
 
 	// ***  TODO : SCENE CLASS ***
@@ -148,16 +153,24 @@ private:
     Microsoft::WRL::ComPtr<ID3D11DepthStencilView>  DepthStencilView;
 
 	// Input layout
-	Microsoft::WRL::ComPtr<ID3D11InputLayout> InputLayout;
+	Microsoft::WRL::ComPtr<ID3D11InputLayout> LitInputLayout;
+    Microsoft::WRL::ComPtr<ID3D11InputLayout> ShadowDepthInputLayout;
 
     // BlendState
     Microsoft::WRL::ComPtr<ID3D11BlendState1> BlendState;
 
     // RasterizerStates
+    ID3D11RasterizerState* ShadowDepthState;
     ID3D11RasterizerState* SolidState;
     ID3D11RasterizerState* WireFrameState;
 
     Microsoft::WRL::ComPtr<ID3D11DepthStencilState> DepthStencilState;
+
+    // shadow map test
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> ShadowMapSRV;
+    Microsoft::WRL::ComPtr<ID3D11RenderTargetView>  ShadowMapRTV;
+    Microsoft::WRL::ComPtr<ID3D11Texture2D> ShadowMapTexture;
+    Microsoft::WRL::ComPtr<ID3D11SamplerState> ShadowMapSamplerState;
 
     // Rendering loop timer.
     DX::StepTimer                                   Timer;
@@ -180,9 +193,8 @@ private:
     ConstantBufferPerFrame_PS PerFrameBuffStruct_PS;
     ConstantBufferPerObject_PS PerObjectBuffStruct_PS;
 
-    // ***** TODO : Where to put that ? *****
-
-    DirectX::XMMATRIX WorldViewProj;
+    DirectX::XMMATRIX WorldViewProj; 
+    DirectX::XMMATRIX LightWorldViewProj;
 
     // RenderText
     DirectX::SimpleMath::Vector2 FontPos;

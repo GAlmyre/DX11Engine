@@ -11,6 +11,8 @@ struct DirectionalLightData
 	DirectX::XMFLOAT4 SpecularColor;
 	DirectX::XMFLOAT3 Direction;
 	float PadDir;
+	DirectX::XMFLOAT3 Position;
+	float PadPos;
 };
 
 struct PointLightData
@@ -31,13 +33,13 @@ public:
 
 	Light(DirectX::XMFLOAT3 NewPosition, DirectX::XMFLOAT4 NewAmbientColor, DirectX::XMFLOAT4 NewDiffuseColor, DirectX::XMFLOAT4 NewSpecularColor);
 
-	// Position of the light in the world
-	//DirectX::XMFLOAT3 Position;
-
 	// Light's colors
 	DirectX::XMFLOAT4 AmbientColor;
 	DirectX::XMFLOAT4 DiffuseColor;
 	DirectX::XMFLOAT4 SpecularColor;
+
+	DirectX::XMMATRIX GetViewMatrix() const;
+	DirectX::XMMATRIX GetProjectionMatrix(float Width, float Height) const;
 };
 
 // Directional light, with a direction
@@ -49,8 +51,6 @@ public:
 
 	// Convert this light to data for use in shaders
 	DirectionalLightData GetLightData();
-
-	//DirectX::XMFLOAT3 Direction{};
 };
 
 

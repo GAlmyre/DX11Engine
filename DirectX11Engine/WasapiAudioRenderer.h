@@ -14,6 +14,7 @@ class WasapiAudioRenderer :
     public AudioRenderer
 {
 public:
+
     void Initialize() override;
     void Tick() override;
 

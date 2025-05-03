@@ -27,7 +27,6 @@ struct PS_INPUT
     float3 Tangent : TANGENT;
     float3 Binormal : BINORMAL;
     float2 TexCoord : TEXCOORD;
-    float2 ReturnTex : RETTEX;
 };
 
 float4 main(PS_INPUT input) : SV_TARGET
