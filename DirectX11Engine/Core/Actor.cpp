@@ -13,6 +13,16 @@ void Actor::UpdateWorldMatrix()
 	WorldMatrix = ScaleMatrix * RotationMatrix * TranslationMatrix;
 }
 
+std::string Actor::GetName()
+{
+	return Name;
+}
+
+void Actor::SetName(std::string NewName)
+{
+	Name = NewName;
+}
+
 DirectX::XMFLOAT3 Actor::GetForwardVector() const
 {
 	DirectX::XMFLOAT3 DefaultForward = DirectX::XMFLOAT3(0.0f, 0.0f, 1.0f);

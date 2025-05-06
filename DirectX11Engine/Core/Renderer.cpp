@@ -32,8 +32,8 @@ using Microsoft::WRL::ComPtr;
 
 Renderer::Renderer() noexcept :
 	Window(nullptr),
-	OutputWidth(800),
-	OutputHeight(600),
+	OutputWidth(2048),
+	OutputHeight(1152),
 	FeatureLevel(D3D_FEATURE_LEVEL_9_1)
 {
 }
@@ -167,35 +167,8 @@ void Renderer::DrawLit()
 	PerFrameBuffStruct_PS.CameraPosition = CamPos;
 	PerFrameBuffStruct_PS.LightsCount = (int)Lights.size();
 
-	// Shadow map
-	D3dContext->OMSetRenderTargets(1, ShadowMapRTV.GetAddressOf(), DepthStencilView.Get());
-	D3dContext->ClearDepthStencilView(DepthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+	//RenderShadowDepth();
 
-	D3dContext->IASetInputLayout(ShadowDepthInputLayout.Get());
-
-	Microsoft::WRL::ComPtr<ID3D11VertexShader> VSRef = ShadowMapVS->GetVertexShaderRef();
-	Microsoft::WRL::ComPtr<ID3D11PixelShader> PSRef = ShadowMapPS->GetPixelShaderRef();
-
-	D3dContext->VSSetShader(VSRef.Get(), nullptr, 0);
-	D3dContext->PSSetShader(PSRef.Get(), nullptr, 0);
-
-	for (Mesh* Mesh : Meshes)
-	{
-		WorldViewProj = Mesh->GetWorldMatrix() * Sun->GetViewMatrix() * Sun->GetProjectionMatrix(OutputWidth, OutputHeight);
-
-		PerObjectBuffStruct_VS.WorldViewProj = XMMatrixTranspose(WorldViewProj);
-		PerObjectBuffStruct_VS.World = XMMatrixTranspose(Mesh->GetWorldMatrix());
-		PerObjectBuffStruct_VS.LightWorldViewProj = XMMatrixTranspose(WorldViewProj);
-
-		D3dContext->UpdateSubresource(PerObjectBuffer_VS.Get(), 0, nullptr, &PerObjectBuffStruct_VS, 0, 0);
-		D3dContext->VSSetConstantBuffers(0, 1, PerObjectBuffer_VS.GetAddressOf());
-
-		Mesh->Draw(D3dContext);
-	}
-
-	D3dContext->ClearDepthStencilView(DepthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-	D3dContext->ClearRenderTargetView(RenderTargetView.Get(), Colors::DarkGray);
-	D3dContext->OMSetRenderTargets(1, RenderTargetView.GetAddressOf(), DepthStencilView.Get());
 	D3dContext->IASetInputLayout(LitInputLayout.Get());
 
 	D3dContext->PSSetShader(PixelShader->GetPixelShaderRef().Get(), nullptr, 0);
@@ -254,6 +227,39 @@ void Renderer::DrawLit()
 		}
 	}
 
+}
+
+void Renderer::RenderShadowDepth()
+{
+	// Shadow map
+	D3dContext->OMSetRenderTargets(1, ShadowMapRTV.GetAddressOf(), DepthStencilView.Get());
+	D3dContext->ClearDepthStencilView(DepthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+
+	D3dContext->IASetInputLayout(ShadowDepthInputLayout.Get());
+
+	Microsoft::WRL::ComPtr<ID3D11VertexShader> VSRef = ShadowMapVS->GetVertexShaderRef();
+	Microsoft::WRL::ComPtr<ID3D11PixelShader> PSRef = ShadowMapPS->GetPixelShaderRef();
+
+	D3dContext->VSSetShader(VSRef.Get(), nullptr, 0);
+	D3dContext->PSSetShader(PSRef.Get(), nullptr, 0);
+
+	for (Mesh* Mesh : Meshes)
+	{
+		WorldViewProj = Mesh->GetWorldMatrix() * Sun->GetViewMatrix() * Sun->GetProjectionMatrix(OutputWidth, OutputHeight);
+
+		PerObjectBuffStruct_VS.WorldViewProj = XMMatrixTranspose(WorldViewProj);
+		PerObjectBuffStruct_VS.World = XMMatrixTranspose(Mesh->GetWorldMatrix());
+		PerObjectBuffStruct_VS.LightWorldViewProj = XMMatrixTranspose(WorldViewProj);
+
+		D3dContext->UpdateSubresource(PerObjectBuffer_VS.Get(), 0, nullptr, &PerObjectBuffStruct_VS, 0, 0);
+		D3dContext->VSSetConstantBuffers(0, 1, PerObjectBuffer_VS.GetAddressOf());
+
+		Mesh->Draw(D3dContext);
+	}
+
+	D3dContext->ClearDepthStencilView(DepthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+	D3dContext->ClearRenderTargetView(RenderTargetView.Get(), Colors::DarkGray);
+	D3dContext->OMSetRenderTargets(1, RenderTargetView.GetAddressOf(), DepthStencilView.Get());
 }
 
 void Renderer::DrawUnlit()
@@ -382,20 +388,20 @@ void Renderer::DrawGui()
 			if (ImGui::Button("Toggle Directional"))
 				bToggleDirectional = !bToggleDirectional;
 
-			ImGui::ColorEdit3("Diffuse", SunDiffuseColor);
-			Sun->DiffuseColor = XMFLOAT4(SunDiffuseColor[0], SunDiffuseColor[1], SunDiffuseColor[2], 1.0f);
+			if (ImGui::ColorEdit3("Diffuse", SunDiffuseColor))
+				Sun->DiffuseColor = XMFLOAT4(SunDiffuseColor[0], SunDiffuseColor[1], SunDiffuseColor[2], 1.0f);
 
-			ImGui::ColorEdit3("Ambient", SunAmbientColor);
-			Sun->AmbientColor = XMFLOAT4(SunAmbientColor[0], SunAmbientColor[1], SunAmbientColor[2], 1.0f);
+			if (ImGui::ColorEdit3("Ambient", SunAmbientColor))
+				Sun->AmbientColor = XMFLOAT4(SunAmbientColor[0], SunAmbientColor[1], SunAmbientColor[2], 1.0f);
 
-			ImGui::ColorEdit3("Specular", SunSpecularColor);
-			Sun->SpecularColor = XMFLOAT4(SunSpecularColor[0], SunSpecularColor[1], SunSpecularColor[2], 1.0f);
+			if (ImGui::ColorEdit3("Specular", SunSpecularColor))
+				Sun->SpecularColor = XMFLOAT4(SunSpecularColor[0], SunSpecularColor[1], SunSpecularColor[2], 1.0f);
 
-			ImGui::SliderFloat3("Direction", SunDirection, -180.0f, 180.0f);
-			Sun->SetRotation(XMFLOAT3(SunDirection[0], SunDirection[1], SunDirection[2]));
+			if (ImGui::SliderFloat3("Direction", SunDirection, -180.0f, 180.0f))
+				Sun->SetRotation(XMFLOAT3(SunDirection[0], SunDirection[1], SunDirection[2]));
 
-			ImGui::SliderFloat3("Position", SunPosition, -10000.0f, 10000.0f);
-			Sun->SetPosition(XMFLOAT3(SunPosition[0], SunPosition[1], SunPosition[2]));
+			if (ImGui::SliderFloat3("Position", SunPosition, -10000.0f, 10000.0f))
+				Sun->SetPosition(XMFLOAT3(SunPosition[0], SunPosition[1], SunPosition[2]));
 		}
 	}
 
@@ -412,8 +418,9 @@ void Renderer::DrawGui()
 		int LightIndex = 0;
 		for (LightAndMesh* Light : Lights)
 		{
-			ImGui::SliderFloat3("Location", &PointLightsLocations[LightIndex][0], -1500.0f, 1500.0f);
-			Light->SetPosition(XMFLOAT3(PointLightsLocations[LightIndex][0], PointLightsLocations[LightIndex][1], PointLightsLocations[LightIndex][2]));
+			std::string CategoryName = Light->Light->GetName();
+			if (ImGui::SliderFloat3(CategoryName.c_str(), &PointLightsLocations[LightIndex][0], -1500.0f, 1500.0f))
+				Light->SetPosition(XMFLOAT3(PointLightsLocations[LightIndex][0], PointLightsLocations[LightIndex][1], PointLightsLocations[LightIndex][2]));
 			LightIndex++;
 		}
 	}
@@ -421,6 +428,26 @@ void Renderer::DrawGui()
 	if (ImGui::Button("Toggle Light Emitters"))
 	{
 		bDrawLightEmitters = !bDrawLightEmitters;
+	}
+
+	// Handle the Meshes
+	std::vector< std::array<float, 3>> MeshesLocations;
+	for (Mesh* CurrentMesh : Meshes)
+	{
+		std::array<float, 3> NewLocation = { CurrentMesh->GetPosition().x, CurrentMesh->GetPosition().y, CurrentMesh->GetPosition().z };
+		MeshesLocations.push_back(NewLocation);
+	}
+
+	if (ImGui::CollapsingHeader("Meshes"))
+	{
+		int MeshIndex = 0;
+		for (Mesh* CurrentMesh : Meshes)
+		{
+			std::string CategoryName = CurrentMesh->GetName();
+			if (ImGui::InputFloat3(CategoryName.c_str(), &MeshesLocations[MeshIndex][0]))
+				CurrentMesh->SetPosition(XMFLOAT3(MeshesLocations[MeshIndex][0], MeshesLocations[MeshIndex][1], MeshesLocations[MeshIndex][2]));
+			MeshIndex++;
+		}
 	}
 
 	if (ImGui::CollapsingHeader("View modes", ImGuiTreeNodeFlags_DefaultOpen))
@@ -534,8 +561,8 @@ void Renderer::OnWindowSizeChanged(int width, int height)
 void Renderer::GetDefaultSize(int& width, int& height) const noexcept
 {
 	// TODO: Change to desired default window size (note minimum size is 320x200).
-	width = 1920;
-	height = 1080;
+	width = 2048;
+	height = 1152;
 }
 
 void Renderer::LoadNewModel(std::wstring Path)
@@ -583,7 +610,7 @@ void Renderer::LoadNewModel(std::wstring Path)
 	}
 }
 
-void Renderer::AddPointLight(XMFLOAT3 Position, XMFLOAT4 DiffuseColor, XMFLOAT4 SpecularColor, XMFLOAT3 Attenuation)
+void Renderer::AddPointLight(XMFLOAT3 Position, XMFLOAT4 DiffuseColor, XMFLOAT4 SpecularColor, XMFLOAT3 Attenuation, std::string Name)
 {
 	LightAndMesh* NewLightStruct = new LightAndMesh();
 	// We override attenuation as assimp doesn't get it right from fbx files
@@ -593,6 +620,8 @@ void Renderer::AddPointLight(XMFLOAT3 Position, XMFLOAT4 DiffuseColor, XMFLOAT4 
 
 	NewLightStruct->Light = NewLight;
 	NewLightStruct->LightMesh = LightMesh;
+	NewLightStruct->Light->SetName(Name);
+	NewLightStruct->LightMesh->SetName(Name + "_mesh");
 
 	Lights.push_back(NewLightStruct);
 }
@@ -622,7 +651,7 @@ void Renderer::ParseAssimpNode(aiNode* Node, const aiScene* Scene, wchar_t* Dir)
 		if (Light->mType == aiLightSource_POINT)
 		{
 			XMFLOAT3 Attenuation = XMFLOAT3(Light->mAttenuationConstant, Light->mAttenuationLinear, Light->mAttenuationQuadratic);
-			//AddPointLight(Position, XMFLOAT4(1.f, 1.f, 1.f, 1.0f), XMFLOAT4(1.f, 1.f, 1.f, 1.0f), Attenuation);
+			AddPointLight(Position, XMFLOAT4(1.f, 1.f, 1.f, 1.0f), XMFLOAT4(1.f, 1.f, 1.f, 1.0f), Attenuation, Light->mName.C_Str());
 		}
 	}
 
@@ -631,6 +660,7 @@ void Renderer::ParseAssimpNode(aiNode* Node, const aiScene* Scene, wchar_t* Dir)
 		aiMesh* CurrentMesh = Scene->mMeshes[Node->mMeshes[i]];
 		Mesh* NewMesh = new Mesh(CurrentMesh, Node, Scene, std::wstring(Dir));
 		NewMesh->InitMesh(D3dDevice, D3dContext);
+		NewMesh->SetName(CurrentMesh->mName.C_Str());
 		Meshes.push_back(NewMesh);
 	}
 
@@ -713,7 +743,7 @@ void Renderer::CreateDevice()
 	SceneCamera = new Camera();
 
 	// load a mesh
-	LoadNewModel(L"Assets/Models/Shapes/TestScene.fbx");
+	LoadNewModel(L"Assets/Models/ShadowTest/ShadowTest.fbx");
 
 	// Base shaders
 	VertexShader = new Shader(L"Shaders/SimpleVertexShader.hlsl", EShaderType::VertexShader, device);
@@ -1055,7 +1085,7 @@ void Renderer::OpenModel()
 	//COMDLG_FILTERSPEC Filters[1] = { L"ObjExt", L"*.obj" };
 
 	// Create the FileOpenDialog object.
-	hr = CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_ALL,
+	hr = CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_ALL,
 		IID_IFileOpenDialog, reinterpret_cast<void**>(&pFileOpen));
 	//pFileOpen->SetFileTypes(1, Filters);
 

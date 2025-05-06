@@ -155,48 +155,49 @@ float4 main(PS_INPUT input) : SV_TARGET
         BumpNormal = normalize(BumpNormal);
     }
     
-    // Shadow maping
-    float2 ProjectedTexCoord;
-    float DepthValue = 0.0f;
-    float LightDepthValue;
+    //// Shadow maping
+    //float2 ProjectedTexCoord;
+    //float DepthValue = 0.0f;
+    //float LightDepthValue;
     float Shadow = 0.0f;
     
-    ProjectedTexCoord.x = input.LightViewPos.x / input.LightViewPos.w / 2.0f + 0.5f;
-    ProjectedTexCoord.y = -input.LightViewPos.y / input.LightViewPos.w / 2.0f + 0.5f;
+    //ProjectedTexCoord.x = input.LightViewPos.x / input.LightViewPos.w / 2.0f + 0.5f;
+    //ProjectedTexCoord.y = -input.LightViewPos.y / input.LightViewPos.w / 2.0f + 0.5f;
     
-    // Find if we are in the projected viewport (0 to 1 range)
-    if ((saturate(ProjectedTexCoord.x) == ProjectedTexCoord.x) && (saturate(ProjectedTexCoord.y) == ProjectedTexCoord.y))
-    {
-        DepthValue = ShadowDepth.Sample(SampleTypeClamp, ProjectedTexCoord).r;
-        LightDepthValue = input.LightViewPos.z / input.LightViewPos.w;
+    //// Find if we are in the projected viewport (0 to 1 range)
+    //if ((saturate(ProjectedTexCoord.x) == ProjectedTexCoord.x) && (saturate(ProjectedTexCoord.y) == ProjectedTexCoord.y))
+    //{
+    //    DepthValue = ShadowDepth.Sample(SampleTypeClamp, ProjectedTexCoord).r;
+    //    LightDepthValue = input.LightViewPos.z / input.LightViewPos.w;
         
-        float Bias = max(0.02 * (1.0 - dot(BumpNormal, normalize(Sun.Position - input.WorldPos.xyz))), 0.005);
+    //    float Bias = max(0.01 * (1.0 - dot(BumpNormal, normalize(Sun.Position - input.WorldPos.xyz))), 0.005);
     
-        // PCF
-        float2 TexelSize;
-        ShadowDepth.GetDimensions(TexelSize.x, TexelSize.y);
-        TexelSize = 1.0 / TexelSize;
+    //    // PCF
+    //    float2 TexelSize;
+    //    ShadowDepth.GetDimensions(TexelSize.x, TexelSize.y);
+    //    TexelSize = 1.0 / TexelSize;
+    //    int DistanceScale = 2;
         
-        for (int x = -1; x <= 1; x++)
-        {
-            for (int y = -1; y <= 1; y++)
-            {
-                float PCFDepth = ShadowDepth.Sample(SampleTypeClamp, ProjectedTexCoord.xy + float2(x, y) * TexelSize).r;
-                Shadow += LightDepthValue - Bias > PCFDepth ? 1.0f : 0.0f;
-            }
-        }
-        Shadow /= 9.0f; // we sampled 9 samples
+    //    for (int x = -DistanceScale; x <= DistanceScale; x++)
+    //    {
+    //        for (int y = -DistanceScale; y <= DistanceScale; y++)
+    //        {
+    //            float PCFDepth = ShadowDepth.Sample(SampleTypeClamp, ProjectedTexCoord.xy + float2(x, y) * TexelSize).r;
+    //            Shadow += LightDepthValue - Bias > PCFDepth ? 1.0f : 0.0f;
+    //        }
+    //    }
+    //    Shadow /= 1 + 8 * DistanceScale;
         
-        // compare the depth of the shadow map and the light.
-        if (LightDepthValue - Bias >= DepthValue)
-        {
-            return float4(AmbientLighting(Sun.Ambient, (float3) TextureColor), 1.0f);
-        }
-    } 
-    else
-    {
-        Shadow = 0.0f;
-    }
+    //    // compare the depth of the shadow map and the light.
+    //    if (LightDepthValue - Bias >= DepthValue)
+    //    {
+    //        return float4(AmbientLighting(Sun.Ambient, (float3) TextureColor), 1.0f);
+    //    }
+    //} 
+    //else
+    //{
+    //    Shadow = 0.0f;
+    //}
     
     // early abort if our alpha is too smal
     if (TextureColor.a < 0.01)

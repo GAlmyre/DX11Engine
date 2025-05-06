@@ -39,7 +39,7 @@ public:
 	DirectX::XMFLOAT4 SpecularColor;
 
 	DirectX::XMMATRIX GetViewMatrix() const;
-	DirectX::XMMATRIX GetProjectionMatrix(float Width, float Height) const;
+	virtual DirectX::XMMATRIX GetProjectionMatrix(float Width, float Height) const;
 };
 
 // Directional light, with a direction
@@ -63,6 +63,7 @@ public:
 
 	// Convert this light to data for use in shaders
 	PointLightData GetLightData();
+	virtual DirectX::XMMATRIX GetProjectionMatrix(float Width, float Height) const override;
 
 	DirectX::XMFLOAT3 Attenuation;
 	float Range = 500;

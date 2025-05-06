@@ -93,7 +93,7 @@ public:
 
     void LoadNewModel(std::wstring Path);
 
-    void AddPointLight(DirectX::XMFLOAT3 Position, DirectX::XMFLOAT4 DiffuseColor, DirectX::XMFLOAT4 SpecularColor, DirectX::XMFLOAT3 Attenuation);
+    void AddPointLight(DirectX::XMFLOAT3 Position, DirectX::XMFLOAT4 DiffuseColor, DirectX::XMFLOAT4 SpecularColor, DirectX::XMFLOAT3 Attenuation, std::string Name);
 
     void ParseAssimpNode(aiNode* Node, const aiScene* Scene, wchar_t* Dir);
 
@@ -124,6 +124,9 @@ private:
     void Render();
 
     void DrawLit();
+
+    void RenderShadowDepth();
+
     void DrawUnlit();
     void DrawNormals(bool bWithMaps);
 

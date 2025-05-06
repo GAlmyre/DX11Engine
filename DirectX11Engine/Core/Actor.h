@@ -32,6 +32,9 @@ public:
 
 	void UpdateWorldMatrix();
 
+	std::string GetName();
+	void SetName(std::string NewName);
+
 	// Direction vectors from transform
 	DirectX::XMFLOAT3 GetForwardVector() const;
 	DirectX::XMFLOAT3 GetRightVector() const;
@@ -44,4 +47,6 @@ protected:
 	DirectX::XMFLOAT3 Position = { 0,0,0 };
 	DirectX::XMFLOAT3 Rotation = { 0,0,0 };
 	DirectX::XMFLOAT3 Scale = { 1,1,1 };
+
+	std::string Name;
 };
