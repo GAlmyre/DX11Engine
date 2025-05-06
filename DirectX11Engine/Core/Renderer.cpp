@@ -4,7 +4,7 @@
 
 #include "Core/pch.h"
 #include "Mesh/Cube.h"
-#include "Camera.h"
+#include "Camera/Camera.h"
 #include "GameInputManager.h"
 #include "Renderer.h"
 
@@ -12,7 +12,7 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include "assimp/material.h"
-#include "Shaders/Shader.h"
+#include "Core/Shader.h"
 
 // GUI
 #include "ImGui/imgui.h"

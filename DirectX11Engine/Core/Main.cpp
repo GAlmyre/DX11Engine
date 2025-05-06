@@ -4,8 +4,8 @@
 
 #include "Core/pch.h"
 #include "Renderer.h"
-#include "AudioRenderer.h"
-#include "WasapiAudioRenderer.h"
+#include "Audio/AudioRenderer.h"
+#include "Audio/WasapiAudioRenderer.h"
 
 #include <commctrl.h>
 #include "mshtmcid.h"

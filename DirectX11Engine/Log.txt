@@ -1,3 +1,3 @@
-2025-05-04 13:01:46.7315209 UTC+2 : Log - Starting DirectXEngine.
-2025-05-04 13:01:47.0822382 UTC+2 : Log - Opening model : Assets/Models/ShadowTest/ShadowTest.fbx
-2025-05-04 13:01:47.0994897 UTC+2 : Warning - Sun up vector : 0.010622, 0.992546, 0.121406
+2025-05-06 18:40:47.6277512 UTC+2 : Log - Starting DirectXEngine.
+2025-05-06 18:40:47.8527212 UTC+2 : Log - Opening model : Assets/Models/ShadowTest/ShadowTest.fbx
+2025-05-06 18:40:47.8672541 UTC+2 : Warning - Sun up vector : 0.010622, 0.992546, 0.121406

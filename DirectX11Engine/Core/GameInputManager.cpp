@@ -1,6 +1,6 @@
 #include "Core/pch.h"
 #include "Core/Renderer.h"
-#include "Camera.h"
+#include "Camera/Camera.h"
 #include "Mesh/Mesh.h"
 
 #include "GameInputManager.h"

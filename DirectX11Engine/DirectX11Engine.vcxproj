@@ -165,12 +165,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="AudioRenderer.h" />
-    <ClInclude Include="Camera.h" />
+    <ClInclude Include="Audio\AudioRenderer.h" />
+    <ClInclude Include="Audio\WasapiAudioRenderer.h" />
+    <ClInclude Include="Camera\Camera.h" />
     <ClInclude Include="Core\Actor.h" />
+    <ClInclude Include="Core\GameInputManager.h" />
+    <ClInclude Include="Core\Logger.h" />
     <ClInclude Include="Core\Math.h" />
     <ClInclude Include="Core\pch.h" />
     <ClInclude Include="Core\Renderer.h" />
+    <ClInclude Include="Core\Shader.h" />
     <ClInclude Include="ImGui\imconfig.h" />
     <ClInclude Include="ImGui\imgui.h" />
     <ClInclude Include="ImGui\imgui_impl_dx11.h" />
@@ -180,24 +184,24 @@
     <ClInclude Include="ImGui\imstb_textedit.h" />
     <ClInclude Include="ImGui\imstb_truetype.h" />
     <ClInclude Include="Lights\Light.h" />
-    <ClInclude Include="Logger.h" />
     <ClInclude Include="Mesh\Cube.h" />
     <ClInclude Include="Mesh\Material.h" />
     <ClInclude Include="Mesh\Mesh.h" />
-    <ClInclude Include="GameInputManager.h" />
     <ClInclude Include="OBJ_Loader.h" />
-    <ClInclude Include="Shaders\Shader.h" />
     <ClInclude Include="StepTimer.h" />
-    <ClInclude Include="WasapiAudioRenderer.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="AudioRenderer.cpp" />
-    <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="Audio\AudioRenderer.cpp" />
+    <ClCompile Include="Audio\WasapiAudioRenderer.cpp" />
+    <ClCompile Include="Camera\Camera.cpp" />
     <ClCompile Include="Core\Actor.cpp" />
+    <ClCompile Include="Core\GameInputManager.cpp" />
+    <ClCompile Include="Core\Logger.cpp" />
     <ClCompile Include="Core\Main.cpp" />
     <ClCompile Include="Core\Math.cpp" />
     <ClCompile Include="Core\pch.cpp" />
     <ClCompile Include="Core\Renderer.cpp" />
+    <ClCompile Include="Core\Shader.cpp" />
     <ClCompile Include="ImGui\imgui.cpp" />
     <ClCompile Include="ImGui\imgui_demo.cpp" />
     <ClCompile Include="ImGui\imgui_draw.cpp" />
@@ -206,13 +210,9 @@
     <ClCompile Include="ImGui\imgui_tables.cpp" />
     <ClCompile Include="ImGui\imgui_widgets.cpp" />
     <ClCompile Include="Lights\Light.cpp" />
-    <ClCompile Include="Logger.cpp" />
     <ClCompile Include="Mesh\Cube.cpp" />
     <ClCompile Include="Mesh\Material.cpp" />
     <ClCompile Include="Mesh\Mesh.cpp" />
-    <ClCompile Include="GameInputManager.cpp" />
-    <ClCompile Include="Shaders\Shader.cpp" />
-    <ClCompile Include="WasapiAudioRenderer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />

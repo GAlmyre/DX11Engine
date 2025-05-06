@@ -62,9 +62,6 @@
     <ClInclude Include="Core\Renderer.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="Shaders\Shader.h">
-      <Filter>Shaders</Filter>
-    </ClInclude>
     <ClInclude Include="ImGui\imconfig.h">
       <Filter>ImGui</Filter>
     </ClInclude>
@@ -102,6 +99,9 @@
     <ClInclude Include="Logger.h">
       <Filter>Core</Filter>
     </ClInclude>
+    <ClInclude Include="Shaders\Shader.h">
+      <Filter>Core</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp">
@@ -130,9 +130,6 @@
     </ClCompile>
     <ClCompile Include="Core\Renderer.cpp">
       <Filter>Core</Filter>
-    </ClCompile>
-    <ClCompile Include="Shaders\Shader.cpp">
-      <Filter>Shaders</Filter>
     </ClCompile>
     <ClCompile Include="ImGui\imgui.cpp">
       <Filter>ImGui</Filter>
@@ -166,6 +163,9 @@
     </ClCompile>
     <ClCompile Include="WasapiAudioRenderer.cpp" />
     <ClCompile Include="Logger.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Shaders\Shader.cpp">
       <Filter>Core</Filter>
     </ClCompile>
   </ItemGroup>

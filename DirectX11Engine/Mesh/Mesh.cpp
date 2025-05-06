@@ -2,7 +2,7 @@
 #include <d3dcompiler.h>
 #include "Mesh.h"
 #include <iostream>
-#include "Shaders/Shader.h"
+#include "Core/Shader.h"
 #include <Core/Math.h>
 #include <filesystem>
 
